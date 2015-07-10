@@ -186,25 +186,66 @@ FigurePuppet.prototype.update = function(figureData) {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/*
+    Key
+*/
+function Key(midi, x, y, isBlack) {
+    this.midi = midi;
+    this.x = x;
+    this.y = y;
+    this.pressedY = y + 0.5;
+    this.isBlack = isBlack;
+    this.geometry = node();
+}
+Key.prototype.pressedPosition = function() {
+    this.geometry.position.y = this.pressedY;
+}
+Key.prototype.resetPosition = function() {
+    this.geometry.position.y = this.y;
+}
+
 /*
     Virtual copy of locations of keyboard
 */
-function Keyboard() {
-    this.whiteKeyHeight = -2;
-    this.blackKeyHeight = this.whiteKeyHeight + 0.40 * 2;
-    this.keyWidth = 0.25;
-}
-Keyboard.prototype.addToScene = function(material, root) {
-    var isBlackKey = [false,true,false,true,false,false,
-                      true,false,true,false,true,false];
-    for (var i = 1 ; i < 20 ; i++) {
-       var c = cube(material);
-       var y = isBlackKey[(i + 11) % 12] ? this.whiteKeyHeight :
-                                            this.blackKeyHeight;
-       c.position.set((i - 12), y/2 - 1.3, 0);
-       c.scale.set(.25,.01,.25);
-       root.add(c);
+function Keyboard(calibration) {
+    this.whiteKeyHeight = 0;
+    this.blackKeyHeight = .2;
+    this.keyWidth = 0.08;
+    this.keyHeight = 0.2;
+    this.geometry = node();
+
+    this.keys = [];
+    for (var i = 0; i < 88; i++) {
+        var x = i * calibration.getWidth()/88 + calibration.getOffsetX();
+        var y = i * calibration.getHeightDiff()/88 + calibration.getOffsetY();
+        var isBlackKey = isBlack(i);
+        var key = new Key(i + 21, x, y + (isBlackKey ? this.blackKeyHeight : this.whiteKeyHeight), isBlackKey);
+        this.keys.push(key);
     }
+    console.log(this.keys.length);
+    function isBlack(num) {
+        var isBlack = [1, 4, 6, 9, 11];
+        for (var i = 0; i < isBlack.length; i++) {
+            if (num % 12 == isBlack[i])
+                return true;
+        }
+        return false;
+    }
+}
+Keyboard.prototype.addToScene = function(material, darkMaterial, root) {
+    root.add(this.geometry);
+    for (var i = 0; i < this.keys.length; i ++) {
+        var keyBlock= cube(this.keys[i].isBlack ? darkMaterial : material);
+        keyBlock.position.set(this.keys[i].x, this.keys[i].y, 0);
+        keyBlock.scale.set(this.keyWidth, this.keyHeight/2, this.keyWidth);
+
+        this.keys[i].geometry = keyBlock;
+        this.geometry.add(keyBlock);
+    }
+}
+Keyboard.prototype.getKey = function(midi) {
+    return this.keys[midi-21];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -256,19 +297,68 @@ function animate() {
 var world = new World();
 world.setup();
 
-var keyboard = new Keyboard();
-keyboard.addToScene(world.darkMaterial, world.root);
+var calibration = new Calibration(world.root);
+
+
+var keyboard = new Keyboard(calibration);
+keyboard.addToScene(world.material, world.darkMaterial, world.root);
 
 var walkingNote = new FigureData(keyboard);
 var puppet = new FigurePuppet(world.material);
 puppet.buildFigure(walkingNote, world.material);
 puppet.addToScene(world.root);
 
-
+// When everything's done, call the loop
 animate(world, walkingNote, puppet);
+
+///////////////////////////////////////////////////////////////////////////////
+// Disklavier support!
+
+navigator.requestMIDIAccess().then(
+    function(midiAccess) {
+        console.log("Success!");
+        var input = midiAccess.inputs.values().next();
+        if (input)
+            input.value.onmidimessage = onMIDIMessage;
+        var output = midiAccess.outputs.values().next();
+
+        if (!input || !output) {
+            console.log("something wrong with IO");
+            return null;
+        }
+
+    },
+    function(err) { console.log("Failed to get MIDI access - " + err); }
+);
+
+function onMIDIMessage(event) {
+    var data = event.data,
+    cmd = data[0] >> 4,
+    channel = data[0] & 0xf,
+    type = data[0] & 0xf0, // channel agnostic message type. Thanks, Phil Burk.
+    note = data[1],
+    vel = data[2];
+    var time = event.timeStamp;
+
+    switch(type) {
+        case 144:
+            console.log("Note on " + note + " velocity " + vel + " time " + time)
+            keyboard.getKey(note).pressedPosition();
+            break;
+        case 128:
+            console.log("Note off " + note + " velocity " + vel + " time " + time)
+            keyboard.getKey(note).resetPosition();
+            break;
+    }
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+
 
 function width() { return window.innerWidth; }
 function height() { return window.innerHeight; }
@@ -277,6 +367,8 @@ window.addEventListener('resize', function() {
    world.camera.aspect = width() / height();
    world.camera.updateProjectionMatrix();
 });
+
+
 
 ///////////////////////
 // UTILITY FUNCTIONS //
