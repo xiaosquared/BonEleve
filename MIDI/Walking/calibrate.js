@@ -32,7 +32,11 @@ Calibration.prototype.getHeightDiff = function() {
 Calibration.prototype.getOffsetY = function() {
     return Math.max(this.rightY, this.leftY);
 }
-
+Calibration.prototype.getYfromX = function(x) {
+    var percent = (x - this.getOffsetX())/this.getWidth();
+    console.log("%: " + percent);
+    return percent * this.getHeightDiff() + this.getOffsetY();
+}
 addEventListener("keydown", function(event) {
     console.log("key! " + event.keyCode);
 

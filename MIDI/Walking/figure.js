@@ -4,23 +4,28 @@
 function FigureData(keyboard) {
     // Constants
     this.size = 1;
-    this.limbLength = 2.3;
-    this.limbRadius = 0.1;
-    this.footLift = 0.8;
-    this.hipsForward = 0.37;
+    this.limbLength = .6;
+    this.limbRadius = 0.02;
+    this.footLift = 0.9;
+    this.hipsForward = 0.3;
     this.hipsApart = 1.3;
     this.feetApart = 1.0;
-    this.noteSize = 0.5;
+    this.noteSize = 0.1;
 
     // moving parts
     this.t = 0;     // maybe t shouldn't be here
     this.x = 5;
+    this.y = -3;    // make the y based on which note he's stepping on
     this.xL = 0;
     this.xR = 0;
     this.Llift = 0;
     this.Rlift = 0;
     this.floorL = keyboard.whiteKeyHeight;
     this.floorR = keyboard.whiteKeyHeight;
+
+    // moving around
+    this.prevKey = null;
+    this.isBlack = false;
 }
 FigureData.prototype.update = function(elapsed, keyboard) {
     var tPrev = this.t;
@@ -28,20 +33,31 @@ FigureData.prototype.update = function(elapsed, keyboard) {
     this.t += speed * elapsed;
 
     var step = 1;
-    var strideLength = 0.5; // hardcoded for now. Eventually will be based on input
+    var strideLength = 0.1; // hardcoded for now. Eventually will be based on input
 
     this.x += 4 * speed * elapsed * strideLength;
+    this.y = calibration.getYfromX(this.x) + 0.2;
+    console.log("y? " + this.y);
 
-    if (this.x >= 6)     // cheat for it to circle back when it gets to the end
-        this.x -= 17;
+    var steppedKey = keyboard.getKeyFromX(this.x)
+    if (steppedKey) {
+        if (steppedKey != this.prevKey) {
+            console.log("Got a key! " + steppedKey.y);
+            this.prevKey = steppedKey;
+            this.isBlack = steppedKey.isBlack;
+        }
+    }
+
+
+    if (this.x >= calibration.rightX)     // cheat for it to circle back when it gets to the end
+        this.x = calibration.leftX - 1;
 
     var f = this.t % 1.0;
     this.Llift = this.footLift * max(0, -sin(TAU * f));
     this.xL = strideLength * (f > 0.5 ? 4 * sCurve(f) - 3 : 1 - 4 * f);
 
     if (f > 0.5) {
-        var isBlack = false;
-        this.floorL = lerp(0.1,this.floorL,isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
+        this.floorL = lerp(0.1,this.floorL,this.isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
     }
 
     f = (this.t + 0.5) % 1.0;
@@ -49,8 +65,7 @@ FigureData.prototype.update = function(elapsed, keyboard) {
     this.xR = strideLength * (f > 0.5 ? 4 * sCurve(f) - 3 : 1 - 4 * f);
 
     if (f > 0.5) {
-        var isBlack = false;
-        this.floorR = lerp(0.1,this.floorR,isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
+        this.floorR = lerp(0.1,this.floorR,this.isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
     }
 }
 
@@ -130,6 +145,7 @@ FigurePuppet.prototype.addToScene = function(root) {
 }
 FigurePuppet.prototype.update = function(figureData) {
     this.body.position.x = figureData.x;
+    this.body.position.y = figureData.y;
     //console.log("x :" + this.body.position.x);
 
     this.Lfoot.position.x = figureData.xL;
@@ -233,6 +249,17 @@ function Keyboard(calibration) {
         return false;
     }
 }
+Keyboard.prototype.getKeyFromX = function(x) {
+    var diffThresh = 0.02;
+    var result = this.keys.reduce(function(a, b) { if (Math.abs(b.x - x) < diffThresh)
+                                                        return b;
+                                                    else
+                                                        return a;}, null);
+    if (result)
+        console.log("getKeyFromX result: " + result.x);
+    return result;
+
+}
 Keyboard.prototype.addToScene = function(material, darkMaterial, root) {
     root.add(this.geometry);
     for (var i = 0; i < this.keys.length; i ++) {
@@ -302,6 +329,13 @@ var calibration = new Calibration(world.root);
 
 var keyboard = new Keyboard(calibration);
 keyboard.addToScene(world.material, world.darkMaterial, world.root);
+
+
+    var testX = 1;
+    var key = keyboard.getKeyFromX(testX);
+    console.log("resulting key " + key + " ...");
+    if (key)
+        console.log("test x: " + testX + " key's x " + key.x);
 
 var walkingNote = new FigureData(keyboard);
 var puppet = new FigurePuppet(world.material);
