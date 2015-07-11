@@ -1,3 +1,33 @@
+function World() {
+    this.renderer = new THREE.WebGLRenderer();
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(4.5,width()/height(),1,1000);
+    this.camera.position.z = 250;
+    this.root = node();
+    this.time = 0;
+
+    this.material = phongMaterial(0xffffff, 0x000000, 0x000000, 30);
+    this.darkMaterial = phongMaterial(0x202020, 0x000000, 0x000000, 20);
+}
+
+World.prototype.setup = function() {
+    this.renderer.setSize(width(), height());
+    document.body.appendChild(this.renderer.domElement);
+
+    this.scene.add(ambientLight(0x333333));
+    this.scene.add(directionalLight(1,1,1, 0xffffff));
+
+    this.root.scale.set(1, 1, 1);
+    this.scene.add(this.root);
+}
+World.prototype.render = function() {
+    this.renderer.setClearColor( 0x000000, 1);
+    this.renderer.render(this.scene, this.camera);
+}
+World.prototype.getRoot = function() {
+    return this.root;
+}
+
 /*
     For calibration
 */

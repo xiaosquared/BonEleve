@@ -57,56 +57,28 @@ NoteSequence.prototype.toString = function() {
     return this.data.toString();
 };
 
-function initMidi() {
-    if (navigator.requestMIDIAccess) {
-        navigator.requestMIDIAccess({
-            sysex:false
-        }).then(onMIDISuccess, onMIDIFailure);
-    } else
-        console.log("No MIDI support in the browser");
+function onMIDIMessage(event) {
+    var data = event.data,
+    cmd = data[0] >> 4,
+    channel = data[0] & 0xf,
+    type = data[0] & 0xf0, // channel agnostic message type. Thanks, Phil Burk.
+    note = data[1],
+    vel = data[2];
+    var time = event.timeStamp;
 
-    function onMIDISuccess(midiAccess) {
-        console.log("Success!");
-        var input = midiAccess.inputs.values().next();
-        if (input)
-            input.value.onmidimessage = onMIDIMessage;
-        var output = midiAccess.outputs.values().next();
-
-        if (!input || !output) {
-            console.log("something wrong with IO");
-            return null;
-        }
-
-        doThings(new MidiOut(output));
+    switch(type) {
+        case 144:
+            console.log("Note on " + note + " velocity " + vel + " time " + time)
+        case 128:
+            addToSequence(type, note, vel, time);
+            console.log("Note off " + note + " velocity " + vel + " time " + time)
+            break;
     }
 
-    function onMIDIFailure(msg) {
-        console.log("failed to get MIDI Access = " + msg);
-    }
-
-    function onMIDIMessage(event) {
-        var data = event.data,
-        cmd = data[0] >> 4,
-        channel = data[0] & 0xf,
-        type = data[0] & 0xf0, // channel agnostic message type. Thanks, Phil Burk.
-        note = data[1],
-        vel = data[2];
-        var time = event.timeStamp;
-
-        switch(type) {
-            case 144:
-                console.log("Note on " + note + " velocity " + vel + " time " + time)
-            case 128:
-                addToSequence(type, note, vel, time);
-                console.log("Note off " + note + " velocity " + vel + " time " + time)
-                break;
-        }
-
-        function addToSequence(type, note, vel, time) {
-            if (seq.addNoteTimedOut(time))
-                seq = new NoteSequence();
-            seq.addNote(type, note, vel, time);
-        }
+    function addToSequence(type, note, vel, time) {
+        if (seq.addNoteTimedOut(time))
+            seq = new NoteSequence();
+        seq.addNote(type, note, vel, time);
     }
 }
 
@@ -124,4 +96,21 @@ function doThings(out) {
     });
 }
 
-initMidi();
+// Main Function starts here
+navigator.requestMIDIAccess().then(
+    function(midiAccess) {
+        console.log("Success!");
+        var input = midiAccess.inputs.values().next();
+        if (input)
+            input.value.onmidimessage = onMIDIMessage;
+        var output = midiAccess.outputs.values().next();
+
+        if (!input || !output) {
+            console.log("something wrong with IO");
+            return null;
+        }
+
+        doThings(new MidiOut(output));
+    },
+    function(err) { console.log("Failed to get MIDI access - " + err); } 
+);
