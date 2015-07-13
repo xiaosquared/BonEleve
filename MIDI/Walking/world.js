@@ -8,6 +8,8 @@ function World() {
 
     this.material = phongMaterial(0xffffff, 0x000000, 0x000000, 30);
     this.darkMaterial = phongMaterial(0x202020, 0x000000, 0x000000, 20);
+
+    this.isPaused = true;
 }
 
 World.prototype.setup = function() {
@@ -32,10 +34,10 @@ World.prototype.getRoot = function() {
     For calibration
 */
 function Calibration(root) {
-    this.leftX = -10.49;
-    this.rightX = 7.43;
-    this.leftY = -2.60;
-    this.rightY = -3.3;
+    this.leftX = -10.59;
+    this.rightX = 7.23;
+    this.leftY = -2.7;
+    this.rightY = -3.39;
     this.whiteY = 0;
     this.blackY = -2;
 
@@ -64,19 +66,25 @@ Calibration.prototype.getOffsetY = function() {
 }
 Calibration.prototype.getYfromX = function(x) {
     var percent = (x - this.getOffsetX())/this.getWidth();
-    console.log("%: " + percent);
+    //console.log("%: " + percent);
     return percent * this.getHeightDiff() + this.getOffsetY();
 }
 addEventListener("keydown", function(event) {
     console.log("key! " + event.keyCode);
 
+    var recalibrate = true;
     switch (event.keyCode) {
-        case 65: // L left
+        case 13:
+            world.isPaused = !world.isPaused;
+            midiOut.flushNotes();
+            recalibrate = false;
+            break;
+        case 65: // L left ... A
             calibration.leftX -=0.01;
             calibration.left.position.x = calibration.leftX;
             console.log("leftX: " + calibration.leftX);
             break;
-        case 83: // L right
+        case 83: // L right ... S
             calibration.leftX +=0.01;
             calibration.left.position.x = calibration.leftX;
             console.log("leftX: " + calibration.leftX);
@@ -90,6 +98,7 @@ addEventListener("keydown", function(event) {
             calibration.leftY -= 0.01;
             calibration.left.position.y = calibration.leftY;
             console.log("leftY: " + calibration.leftY);
+            break;
         case 186:
             calibration.rightX -=0.01;
             calibration.right.position.x = calibration.rightX;
@@ -110,6 +119,11 @@ addEventListener("keydown", function(event) {
             calibration.right.position.y = calibration.rightY;
             console.log("rightY: " + calibration.rightY);
             break;
+        default:
+            recalibrate = false;
+            break;
     }
+    if (recalibrate)
+        keyboard.calibrate(calibration);
 
 });

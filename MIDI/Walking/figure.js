@@ -11,10 +11,12 @@ function FigureData(keyboard) {
     this.hipsApart = 1.3;
     this.feetApart = 1.0;
     this.noteSize = 0.1;
+    this.strideLength = keyboard.distBetweenKeys/2;
+    this.speed = 1;
 
     // moving parts
     this.t = 0;     // maybe t shouldn't be here
-    this.x = 5;
+    this.x = keyboard.keys[36].x - keyboard.distBetweenKeys/2;
     this.y = -3;    // make the y based on which note he's stepping on
     this.xL = 0;
     this.xR = 0;
@@ -25,47 +27,58 @@ function FigureData(keyboard) {
 
     // moving around
     this.prevKey = null;
-    this.isBlack = false;
+    this.isBlackKey = [0,0,0,0,0,0,0,0,0,0,0];//[0, 0,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1];
+    this.steps = [2, 1, 2, 2, 1, 2, 2];
+    this.notes = [38, 39, 41, 43, 44, 46, 48];
+    this.stepNum = 0;
+    this.black = false;
+    this.stepIndex = 0;
 }
 FigureData.prototype.update = function(elapsed, keyboard) {
     var tPrev = this.t;
-    var speed = 1;  // hardcoded for now
-    this.t += speed * elapsed;
+    this.t += this.speed * elapsed;
+
+    if (world.isPaused)
+        return;
+
+    if (tPrev % 0.5 > this.t % 0.5) {
+        var note = this.notes[this.stepIndex % this.steps.length];
+        midiOut.noteOn(keyboard.keys[note].midi, 10);
+
+        this.stepIndex++;
+   }
+   if (this.stepIndex >= this.steps.length)
+        this.stepIndex = 0;
+
 
     var step = 1;
-    var strideLength = 0.1; // hardcoded for now. Eventually will be based on input
+    this.strideLength = lerp(0.1, this.strideLength, keyboard.distBetweenKeys/2 * this.steps[this.stepIndex%this.steps.length]); // hardcoded for now. Eventually will be based on input
 
-    this.x += 4 * speed * elapsed * strideLength;
-    this.y = calibration.getYfromX(this.x) + 0.2;
-    console.log("y? " + this.y);
+    this.x += 4 * this.speed * elapsed * this.strideLength;
+    this.y = calibration.getYfromX(this.x) + keyboard.keyHeight*.7;
 
-    var steppedKey = keyboard.getKeyFromX(this.x)
-    if (steppedKey) {
-        if (steppedKey != this.prevKey) {
-            console.log("Got a key! " + steppedKey.y);
-            this.prevKey = steppedKey;
-            this.isBlack = steppedKey.isBlack;
-        }
+    if (this.x >= calibration.rightX) {   // cheat for it to circle back when it gets to the end
+        this.x = keyboard.keys[0].x - keyboard.distBetweenKeys;
+        this.stepIndex = 0;
     }
 
-
-    if (this.x >= calibration.rightX)     // cheat for it to circle back when it gets to the end
-        this.x = calibration.leftX - 1;
-
+    // determines what type of step
     var f = this.t % 1.0;
     this.Llift = this.footLift * max(0, -sin(TAU * f));
-    this.xL = strideLength * (f > 0.5 ? 4 * sCurve(f) - 3 : 1 - 4 * f);
+    this.xL = this.strideLength * (f > 0.5 ? 4 * sCurve(f) - 3 : 1 - 4 * f);
 
     if (f > 0.5) {
-        this.floorL = lerp(0.1,this.floorL,this.isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
+        var isBlack = this.isBlackKey[floor((this.x + this.xL) / (2 * this.strideLength) + 1200) % 12];
+        this.floorL = lerp(0.1, this.floorL, isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
     }
 
     f = (this.t + 0.5) % 1.0;
     this.Rlift = this.footLift * max(0, -sin(TAU * f));
-    this.xR = strideLength * (f > 0.5 ? 4 * sCurve(f) - 3 : 1 - 4 * f);
+    this.xR = this.strideLength * (f > 0.5 ? 4 * sCurve(f) - 3 : 1 - 4 * f);
 
     if (f > 0.5) {
-        this.floorR = lerp(0.1,this.floorR,this.isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
+        var isBlack = this.isBlackKey[floor((this.x + this.xR) / (2 * this.strideLength) + 1200) % 12];
+        this.floorR = lerp(0.1, this.floorR, isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
     }
 }
 
@@ -105,8 +118,8 @@ FigurePuppet.prototype.buildFigure = function(figureData, material) {
     this.Rhip.position.y = -hipWidth/2;
     this.Rhip.position.z = 2;
 
-    var Llim1 = cylinderZ(material);
-    var Llim2 = cylinderZ(material);
+    var Llim1 = cylinderZ()//material);
+    var Llim2 = cylinderZ()//material);
     Llim1.scale.set(r, r, l/2);
     Llim2.scale.set(r, r, l/2);
     this.Lleg1.add(Llim1);

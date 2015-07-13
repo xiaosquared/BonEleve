@@ -16,28 +16,37 @@ Key.prototype.pressedPosition = function() {
 Key.prototype.resetPosition = function() {
     this.geometry.position.y = this.y;
 }
+Key.prototype.setXY = function(x, y) {
+    this.x = x;
+    this.y = y;
+    this.geometry.position.set(x, y, 0);
+}
 
 /*
     Virtual copy of locations of keyboard
 */
 function Keyboard(calibration) {
     this.whiteKeyHeight = 0;
-    this.blackKeyHeight = .2;
-    this.keyWidth = 0.08;
+    this.blackKeyHeight = .4;
+    this.distBetweenKeys = calibration.getWidth()/89;
+    this.keyWidth = 0.09;
     this.keyHeight = 0.2;
     this.geometry = node();
 
+
     this.keys = [];
-    for (var i = 0; i < 88; i++) {
-        var x = i * calibration.getWidth()/88 + calibration.getOffsetX();
-        var y = i * calibration.getHeightDiff()/88 + calibration.getOffsetY();
+    for (var i = 1; i < 89; i++) {
+        var x = i * calibration.getWidth()/89 + calibration.getOffsetX();
+        var y = i * calibration.getHeightDiff()/89 + calibration.getOffsetY();
         var isBlackKey = isBlack(i);
-        var key = new Key(i + 21, x, y + (isBlackKey ? this.blackKeyHeight : this.whiteKeyHeight), isBlackKey);
+        var key = new Key(i + 20, x, y + (isBlackKey ? this.blackKeyHeight : this.whiteKeyHeight), isBlackKey);
         this.keys.push(key);
     }
+    console.log("x0: " + this.keys[0].x);
+    console.log("x1: " + this.keys[1].x);
     console.log(this.keys.length);
     function isBlack(num) {
-        var isBlack = [1, 4, 6, 9, 11];
+        var isBlack = [2, 5, 7, 10, 0];//[1, 4, 6, 9, 11];
         for (var i = 0; i < isBlack.length; i++) {
             if (num % 12 == isBlack[i])
                 return true;
@@ -45,6 +54,14 @@ function Keyboard(calibration) {
         return false;
     }
 }
+Keyboard.prototype.calibrate = function(calibration) {
+    for (var i = 1; i < 89; i++) {
+        var x = i * calibration.getWidth()/89 + calibration.getOffsetX();
+        var y = i * calibration.getHeightDiff()/89 + calibration.getOffsetY();
+        this.keys[i-1].setXY(x, y + (this.keys[i-1].isBlack ? this.blackKeyHeight : this.whiteKeyHeight));
+    }
+}
+
 Keyboard.prototype.getKeyFromX = function(x) {
     var diffThresh = 0.02;
     var result = this.keys.reduce(function(a, b) { if (Math.abs(b.x - x) < diffThresh)
@@ -52,10 +69,22 @@ Keyboard.prototype.getKeyFromX = function(x) {
                                                     else
                                                         return a;}, null);
     if (result)
-        console.log("getKeyFromX result: " + result.x);
+        //console.log("getKeyFromX result: " + result.x);
     return result;
 
 }
+Keyboard.prototype.getNextKeyFromX = function(x) {
+    var diffThresh = 0.02;
+    for (var i = 0; i < this.keys.length; i++) {
+        if (Math.abs(this.keys[i].x - x) < diffThresh) {
+            if (i == 87)
+                return this.keys[0];
+            else
+                return this.keys[i+1];
+        }
+    }
+}
+
 Keyboard.prototype.addToScene = function(material, darkMaterial, root) {
     root.add(this.geometry);
     for (var i = 0; i < this.keys.length; i ++) {
@@ -69,4 +98,84 @@ Keyboard.prototype.addToScene = function(material, darkMaterial, root) {
 }
 Keyboard.prototype.getKey = function(midi) {
     return this.keys[midi-21];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Disklavier support!
+
+function MidiOut(output) {
+    this.output = output;
+}
+MidiOut.prototype.noteOn = function(note, velocity) {
+    velocity = velocity || 30;
+    var noteOnMessage = [144, note, velocity];
+    this.output.value.send(noteOnMessage);
+    console.log("Note On: " + noteOnMessage);
+};
+MidiOut.prototype.noteOff = function(note, velocity) {
+    velocity = velocity || 30;
+    var noteOffMessage = [128, note, velocity];
+    for (var i = 0; i < 10; i++)
+        this.output.value.send(noteOffMessage);
+    console.log("Note Off: " + noteOffMessage);
+};
+MidiOut.prototype.sendMsg = function(msg, time) {
+    this.output.value.send(msg, time);
+};
+MidiOut.prototype.printIO = function() {
+    console.log( "Output port [type:'" + this.output.type + "'] id:'" + this.output.id +
+    "' manufacturer:'" + this.output.manufacturer + "' name:'" + this.output.name +
+    "' version:'" + this.output.version + "'" );
+}
+MidiOut.prototype.flushNotes = function() {
+    for (var i = 0; i < 21+88; i++) {
+
+        var count = 0;
+        while (count < 5) {
+            this.output.value.send([128, i, 20]);
+            count++;
+        }
+    }
+}
+
+var midiOut;
+navigator.requestMIDIAccess().then(
+    function(midiAccess) {
+        console.log("Success!");
+        var input = midiAccess.inputs.values().next();
+        if (input)
+            input.value.onmidimessage = onMIDIMessage;
+
+        var output = midiAccess.outputs.values().next();
+        if (output)
+            midiOut = new MidiOut(output);
+
+        if (!input || !output) {
+            console.log("something wrong with IO");
+            return null;
+        }
+
+    },
+    function(err) { console.log("Failed to get MIDI access - " + err); }
+);
+
+function onMIDIMessage(event) {
+    var data = event.data,
+    cmd = data[0] >> 4,
+    channel = data[0] & 0xf,
+    type = data[0] & 0xf0, // channel agnostic message type. Thanks, Phil Burk.
+    note = data[1],
+    vel = data[2];
+    var time = event.timeStamp;
+
+    switch(type) {
+        case 144:
+            console.log("Note on " + note + " velocity " + vel + " time " + time)
+            keyboard.getKey(note).pressedPosition();
+            break;
+        case 128:
+            console.log("Note off " + note + " velocity " + vel + " time " + time)
+            keyboard.getKey(note).resetPosition();
+            break;
+    }
 }
