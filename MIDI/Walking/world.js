@@ -77,6 +77,9 @@ addEventListener("keydown", function(event) {
         case 13:
             world.isPaused = !world.isPaused;
             midiOut.flushNotes();
+            walkingNote.initSequence(sequence);
+            console.log("seq length " + sequence.getLength());
+
             recalibrate = false;
             break;
         case 65: // L left ... A

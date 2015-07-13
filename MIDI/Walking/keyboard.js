@@ -172,6 +172,7 @@ function onMIDIMessage(event) {
         case 144:
             console.log("Note on " + note + " velocity " + vel + " time " + time)
             keyboard.getKey(note).pressedPosition();
+            sequence.addNote(note);
             break;
         case 128:
             console.log("Note off " + note + " velocity " + vel + " time " + time)

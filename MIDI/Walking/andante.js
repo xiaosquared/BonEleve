@@ -4,6 +4,8 @@ world.setup();
 
 var calibration = new Calibration(world.root);
 
+var sequence = new StepSequence();
+
 var keyboard = new Keyboard(calibration);
 keyboard.addToScene(world.material, world.darkMaterial, world.root);
 
