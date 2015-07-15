@@ -27,41 +27,41 @@ Key.prototype.setXY = function(x, y) {
 */
 function Keyboard(calibration) {
     this.whiteKeyHeight = 0;
-    this.blackKeyHeight = .4;
-    this.distBetweenKeys = calibration.getWidth()/89;
-    this.keyWidth = 0.09;
-    this.keyHeight = 0.2;
+    this.blackKeyHeight = 1;
+    this.keyWidth = 0.4;
+    this.keyHeight = 0.1;
     this.geometry = node();
 
 
     this.keys = [];
     for (var i = 1; i < 89; i++) {
-        var x = i * calibration.getWidth()/89 + calibration.getOffsetX();
-        var y = i * calibration.getHeightDiff()/89 + calibration.getOffsetY();
-        var isBlackKey = isBlack(i);
+        var x = i;
+        var y = 0;
+        var isBlackKey = this.isBlack(i);
         var key = new Key(i + 20, x, y + (isBlackKey ? this.blackKeyHeight : this.whiteKeyHeight), isBlackKey);
         this.keys.push(key);
     }
     console.log("x0: " + this.keys[0].x);
     console.log("x1: " + this.keys[1].x);
     console.log(this.keys.length);
-    function isBlack(num) {
-        var isBlack = [2, 5, 7, 10, 0];//[1, 4, 6, 9, 11];
-        for (var i = 0; i < isBlack.length; i++) {
-            if (num % 12 == isBlack[i])
-                return true;
-        }
-        return false;
-    }
-}
-Keyboard.prototype.calibrate = function(calibration) {
-    for (var i = 1; i < 89; i++) {
-        var x = i * calibration.getWidth()/89 + calibration.getOffsetX();
-        var y = i * calibration.getHeightDiff()/89 + calibration.getOffsetY();
-        this.keys[i-1].setXY(x, y + (this.keys[i-1].isBlack ? this.blackKeyHeight : this.whiteKeyHeight));
-    }
 }
 
+Keyboard.prototype.isBlack= function(num) {
+    var isBlack = [2, 5, 7, 10, 0]; //[1, 4, 6, 9, 11];
+    for (var i = 0; i < isBlack.length; i++) {
+        if (num % 12 == isBlack[i])
+            return true;
+    }
+    return false;
+}
+
+Keyboard.prototype.calibrate = function(calibration) {
+    for (var i = 1; i < 89; i++) {
+        var x = i;
+        var y = 0//
+        this.keys[i-1].setXY(x, y);
+    }
+}
 Keyboard.prototype.getKeyFromX = function(x) {
     var diffThresh = 0.02;
     var result = this.keys.reduce(function(a, b) { if (Math.abs(b.x - x) < diffThresh)
@@ -172,7 +172,7 @@ function onMIDIMessage(event) {
         case 144:
             console.log("Note on " + note + " velocity " + vel + " time " + time)
             keyboard.getKey(note).pressedPosition();
-            sequence.addNote(note);
+            sequence.addNote(note, vel, time);
             break;
         case 128:
             console.log("Note off " + note + " velocity " + vel + " time " + time)

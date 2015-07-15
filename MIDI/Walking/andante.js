@@ -1,8 +1,11 @@
 
-var world = new World();
+var calibration = new Calibration();
+
+var world = new World(calibration);
 world.setup();
 
-var calibration = new Calibration(world.root);
+calibration.addToScene(world.scene);
+
 
 var sequence = new StepSequence();
 

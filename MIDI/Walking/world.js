@@ -1,15 +1,26 @@
-function World() {
+function World(calibration) {
     this.renderer = new THREE.WebGLRenderer();
-    this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(4.5,width()/height(),1,1000);
     this.camera.position.z = 250;
+
+    this.scene = new THREE.Scene();
     this.root = node();
+
+    this.calibrate(calibration);
+
     this.time = 0;
 
     this.material = phongMaterial(0xffffff, 0x000000, 0x000000, 30);
     this.darkMaterial = phongMaterial(0x202020, 0x000000, 0x000000, 20);
 
     this.isPaused = true;
+}
+World.prototype.calibrate = function(calibration) {
+    this.root.position.x = calibration.getOffsetX();
+    this.root.position.y = calibration.getOffsetY();
+    this.root.rotation.z = Math.atan2(calibration.getHeightDiff(), calibration.getWidth());
+    var scale = calibration.getWidth()/89;
+    this.root.scale.set(scale, scale, scale);
 }
 
 World.prototype.setup = function() {
@@ -19,7 +30,6 @@ World.prototype.setup = function() {
     this.scene.add(ambientLight(0x333333));
     this.scene.add(directionalLight(1,1,1, 0xffffff));
 
-    this.root.scale.set(1, 1, 1);
     this.scene.add(this.root);
 }
 World.prototype.render = function() {
@@ -33,7 +43,7 @@ World.prototype.getRoot = function() {
 /*
     For calibration
 */
-function Calibration(root) {
+function Calibration() {
     this.leftX = -10.59;
     this.rightX = 7.23;
     this.leftY = -2.7;
@@ -43,15 +53,18 @@ function Calibration(root) {
 
     this.left = globe();
     this.right = globe();
+}
 
+Calibration.prototype.addToScene = function(scene) {
     this.left.position.set(this.leftX, this.leftY, 0);
     this.left.scale.set(.1, .1, .1);
-    root.add(this.left);
+    scene.add(this.left);
 
     this.right.position.set(this.rightX, this.rightY, 0);
     this.right.scale.set(.1, .1, .1);
-    root.add(this.right);
+    scene.add(this.right);
 }
+
 Calibration.prototype.getWidth = function() {
     return this.rightX - this.leftX;
 }
@@ -127,6 +140,6 @@ addEventListener("keydown", function(event) {
             break;
     }
     if (recalibrate)
-        keyboard.calibrate(calibration);
+        world.calibrate(calibration);
 
 });

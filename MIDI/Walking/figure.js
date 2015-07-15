@@ -1,37 +1,66 @@
-function Step(stepSize, midi, speed) {
+function Step(stepSize, midi, vel, time) {
     this.stepSize = stepSize;
     this.midi = midi;
-    this.speed = speed || 1;
+    this.velocity = vel;
+    this.time = time || 1;
 }
 
 function StepSequence() {
-    this.default = [60, 62, 64, 65, 67, 69, 71, 72];
+    this.defaultMidi = [60, 62, 64, 65, 67, 69, 71, 72];
+    this.defaultSteps = [1, 2, 2, 1, 2, 2, 2, 1];
+
     this.steps = [];
     this.timeout = 2000;
+    this.prevTime = 0;
 }
-StepSequence.prototype.addNote = function(midi) {
-    console.log("adding note! " + midi);
+StepSequence.prototype.addNote = function(midi, vel, time) {
+    console.log("adding note! " + midi + " time " + time);
 
     var step;
-    if (this.steps.length == 0)
-        step = new Step(1, midi);
-    else
-        step = new Step(midi - this.steps[this.steps.length-1].midi, midi);
+    if (this.steps.length == 0) {
+        step = new Step(1, midi, vel);
+        this.prevTime = time;
+    }
+    else {
+        var stepSize = midi - this.steps[this.steps.length-1].midi;
+        step = new Step(stepSize, midi, vel, (time - this.prevTime)/1000);
+        this.prevTime = time;
+    }
     this.steps.push(step);
 }
 StepSequence.prototype.getInitialPosition = function() {
+    //var index = this.defaultMidi[0] - 22;
+    //return keyboard.keys[index].x - keyboard.distBetweenKeys/2;
+
     var index = this.steps[0].midi - 22;
-    return keyboard.keys[index].x - keyboard.distBetweenKeys/2;
+    return keyboard.keys[index].x - 0.5;
 }
 StepSequence.prototype.getLength = function() {
+    //return this.defaultMidi.length;
     return this.steps.length;
 }
 StepSequence.prototype.getNote = function(index) {
+    //return this.defaultMidi[index];
     return this.steps[index].midi;
 }
+StepSequence.prototype.getMidi = function(index) {
+    return [this.steps[index].midi, this.steps[index].velocity];
+}
 StepSequence.prototype.getStepSize = function(index) {
+    //return this.defaultSteps[index];
+    if (index == 0)
+        return 1;
     return this.steps[index].stepSize;
 }
+StepSequence.prototype.getSpeed = function(index) {
+    if (index == 0)
+        return 1;
+    return 1/(this.steps[index].time*2);
+}
+StepSequence.prototype.isBlack = function(index, keyboard) {
+    return keyboard.isBlack(this.steps[index].midi - 20);
+}
+
 
 /*
     Keeps track of an animated character's numbers
@@ -39,20 +68,20 @@ StepSequence.prototype.getStepSize = function(index) {
 function FigureData(keyboard) {
     // Constants
     this.size = 1;
-    this.limbLength = .6;
-    this.limbRadius = 0.02;
+    this.limbLength = 2.3;
+    this.limbRadius = 0.15;
     this.footLift = 0.9;
     this.hipsForward = 0.3;
     this.hipsApart = 1.3;
     this.feetApart = 1.0;
-    this.noteSize = 0.1;
-    this.strideLength = keyboard.distBetweenKeys/2;
+    this.noteSize = 0.5;
+    this.strideLength = 0.5;
     this.speed = 1;
 
     // moving parts
-    this.t = 0;     // maybe t shouldn't be here
-    this.x = keyboard.keys[36].x - keyboard.distBetweenKeys/2;
-    this.y = -3;    // make the y based on which note he's stepping on
+    this.t = 0;
+    this.x = 0;
+    this.y = -0;    // make the y based on which note he's stepping on
     this.xL = 0;
     this.xR = 0;
     this.Llift = 0;
@@ -64,34 +93,30 @@ function FigureData(keyboard) {
     this.prevKey = null;
     this.stepIndex = 0;
 
-    this.isBlackKey = [0,0,0,0,0,0,0,0,0,0,0];//[0, 0,  1, 1, 1, 1, 1,  1, 1, 1, 1, 1];
-    this.black = false;
-
-    this.steps = [-2, -1, -2, -2, -1, -2, -2];//[2, 1, 2, 2, 1, 2, 2];
-    this.notes = [38, 39, 41, 43, 44, 46, 48];
     this.speed = 0.5;
-    this.speeds = [0.5, 2, 2, 2, 1, 0.5, 0.25];
+
 }
 FigureData.prototype.initSequence = function() {
     this.x = sequence.getInitialPosition();
 }
 
 FigureData.prototype.update = function(elapsed, keyboard) {
+    if (world.isPaused) {
+        this.stepIndex = 0;
+        return;
+    }
+
     var tPrev = this.t;
-
-    //this.speed = 1;//this.speeds[this.stepIndex%this.steps.length];
-    this.speed = .5;
-
+    this.speed = sequence.getSpeed(this.stepIndex);
     this.t += this.speed * elapsed;
 
-    if (world.isPaused)
-        return;
+
+    //console.log("elapsed: " + elapsed);
+
 
     if (tPrev % 0.5 > this.t % 0.5) {
-
-        var note = sequence.getNote(this.stepIndex);
-        midiOut.noteOn(note, 10);
-
+        var midi = sequence.getMidi(this.stepIndex);
+        midiOut.noteOn(midi[0], midi[1]);
         var noteOff;
         if (this.stepIndex != 0) {
             noteOff = sequence.getNote(this.stepIndex - 1);
@@ -103,20 +128,12 @@ FigureData.prototype.update = function(elapsed, keyboard) {
 
    if (this.stepIndex >= sequence.getLength()) {
         this.stepIndex = 0;
-        world.isPaused = true;;
+        world.isPaused = true;
     }
 
-
-    var step = sequence.getStepSize(this.stepIndex); //this.steps[this.stepIndex%this.steps.length]
-    this.strideLength = lerp(0.1, this.strideLength, keyboard.distBetweenKeys/2 * step); // hardcoded for now. Eventually will be based on input
-
+    var step = sequence.getStepSize(this.stepIndex);
+    this.strideLength = lerp(0.1, this.strideLength, 0.5 * step);
     this.x += 4 * this.speed * elapsed * this.strideLength;
-    this.y = calibration.getYfromX(this.x) + keyboard.keyHeight*.7;
-
-    if (this.x >= keyboard.keys[47].x) {   // cheat for it to circle back when it gets to the end
-        this.x = keyboard.keys[36].x - keyboard.distBetweenKeys/2;
-        this.stepIndex = 0;
-    }
 
     // determines what type of step
     var f = this.t % 1.0;
@@ -124,7 +141,7 @@ FigureData.prototype.update = function(elapsed, keyboard) {
     this.xL = this.strideLength * (f > 0.5 ? 4 * sCurve(f) - 3 : 1 - 4 * f);
 
     if (f > 0.5) {
-        var isBlack = this.isBlackKey[floor((this.x + this.xL) / (2 * this.strideLength) + 1200) % 12];
+        var isBlack = sequence.isBlack(this.stepIndex, keyboard);
         this.floorL = lerp(0.1, this.floorL, isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
     }
 
@@ -133,7 +150,7 @@ FigureData.prototype.update = function(elapsed, keyboard) {
     this.xR = this.strideLength * (f > 0.5 ? 4 * sCurve(f) - 3 : 1 - 4 * f);
 
     if (f > 0.5) {
-        var isBlack = this.isBlackKey[floor((this.x + this.xR) / (2 * this.strideLength) + 1200) % 12];
+        var isBlack = sequence.isBlack(this.stepIndex, keyboard);
         this.floorR = lerp(0.1, this.floorR, isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
     }
 
