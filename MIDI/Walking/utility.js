@@ -69,3 +69,11 @@ function directionalLight(x, y, z, color) {
    myLight.position.set(x,y,z).normalize();
    return myLight;
 }
+
+window.addEventListener('resize', function() {
+   world.renderer.setSize(width(), height());
+   world.camera.aspect = width() / height();
+   world.camera.updateProjectionMatrix();
+});
+function width() { return window.innerWidth; }
+function height() { return window.innerHeight; }

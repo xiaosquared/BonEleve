@@ -6,11 +6,10 @@ world.setup();
 
 calibration.addToScene(world.scene);
 
-
-var sequence = new StepSequence();
-
 var keyboard = new Keyboard(calibration);
 keyboard.addToScene(world.material, world.darkMaterial, world.root);
+
+var sequence = new AlteredScale(84);//new StepSequence();
 
 var walkingNote = new FigureData(keyboard);
 var puppet = new FigurePuppet(world.material);
@@ -35,11 +34,3 @@ function animate() {
 animate(world, walkingNote, puppet);
 
 ////////////////////////////////////////////////////////////////////////////////
-
-window.addEventListener('resize', function() {
-   world.renderer.setSize(width(), height());
-   world.camera.aspect = width() / height();
-   world.camera.updateProjectionMatrix();
-});
-function width() { return window.innerWidth; }
-function height() { return window.innerHeight; }

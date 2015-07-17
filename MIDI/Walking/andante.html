@@ -3,17 +3,42 @@
     <head>
         <meta charset="utf-8">
         <title>Andante Test</title>
+        <style>
+
+        body {
+            background: black;
+            padding:0;
+            margin: 0;
+            font-weight: bold;
+            overflow: hidden;
+        }
+
+        #info {
+				position: absolute;
+				top: 0px; width: 100%;
+				color: #ffffff;
+				padding: 20px;
+				font-family:Monospace;
+				font-size:18px;
+				text-align:center;
+				z-index:1000;
+			}
+        </style>
     </head>
     <body>
+        <div id="info">Andante</div>
 
         <script src = "./lib/three.min.js"></script>
-        
+
         <script src="./utility.js" type="text/javascript"></script>
         <script src="./world.js" type="text/javascript"></script>
         <script src="./keyboard.js" type="text/javascript"></script>
+        <script src="./content.js" type="text/javascript"></script>
         <script src="./figure.js" type="text/javascript"></script>
 
         <script src="./andante.js" type="text/javascript"></script>
+
+
 
     </body>
 </html>

@@ -1,67 +1,3 @@
-function Step(stepSize, midi, vel, time) {
-    this.stepSize = stepSize;
-    this.midi = midi;
-    this.velocity = vel;
-    this.time = time || 1;
-}
-
-function StepSequence() {
-    this.defaultMidi = [60, 62, 64, 65, 67, 69, 71, 72];
-    this.defaultSteps = [1, 2, 2, 1, 2, 2, 2, 1];
-
-    this.steps = [];
-    this.timeout = 2000;
-    this.prevTime = 0;
-}
-StepSequence.prototype.addNote = function(midi, vel, time) {
-    console.log("adding note! " + midi + " time " + time);
-
-    var step;
-    if (this.steps.length == 0) {
-        step = new Step(1, midi, vel);
-        this.prevTime = time;
-    }
-    else {
-        var stepSize = midi - this.steps[this.steps.length-1].midi;
-        step = new Step(stepSize, midi, vel, (time - this.prevTime)/1000);
-        this.prevTime = time;
-    }
-    this.steps.push(step);
-}
-StepSequence.prototype.getInitialPosition = function() {
-    //var index = this.defaultMidi[0] - 22;
-    //return keyboard.keys[index].x - keyboard.distBetweenKeys/2;
-
-    var index = this.steps[0].midi - 22;
-    return keyboard.keys[index].x - 0.5;
-}
-StepSequence.prototype.getLength = function() {
-    //return this.defaultMidi.length;
-    return this.steps.length;
-}
-StepSequence.prototype.getNote = function(index) {
-    //return this.defaultMidi[index];
-    return this.steps[index].midi;
-}
-StepSequence.prototype.getMidi = function(index) {
-    return [this.steps[index].midi, this.steps[index].velocity];
-}
-StepSequence.prototype.getStepSize = function(index) {
-    //return this.defaultSteps[index];
-    if (index == 0)
-        return 1;
-    return this.steps[index].stepSize;
-}
-StepSequence.prototype.getSpeed = function(index) {
-    if (index == 0)
-        return 1;
-    return 1/(this.steps[index].time*2);
-}
-StepSequence.prototype.isBlack = function(index, keyboard) {
-    return keyboard.isBlack(this.steps[index].midi - 20);
-}
-
-
 /*
     Keeps track of an animated character's numbers
 */
@@ -76,7 +12,7 @@ function FigureData(keyboard) {
     this.feetApart = 1.0;
     this.noteSize = 0.5;
     this.strideLength = 0.5;
-    this.speed = 1;
+    this.speed = 0.5;
 
     // moving parts
     this.t = 0;
@@ -95,9 +31,11 @@ function FigureData(keyboard) {
 
     this.speed = 0.5;
 
+    this.lastStep = false;
 }
-FigureData.prototype.initSequence = function() {
-    this.x = sequence.getInitialPosition();
+FigureData.prototype.initSequence = function(keyboard) {
+    this.stepIndex = 0;
+    this.x = sequence.getInitialPosition(keyboard);
 }
 
 FigureData.prototype.update = function(elapsed, keyboard) {
@@ -107,32 +45,33 @@ FigureData.prototype.update = function(elapsed, keyboard) {
     }
 
     var tPrev = this.t;
-    this.speed = sequence.getSpeed(this.stepIndex);
+    //this.speed = sequence.getSpeed(this.stepIndex);
     this.t += this.speed * elapsed;
-
-
-    //console.log("elapsed: " + elapsed);
 
 
     if (tPrev % 0.5 > this.t % 0.5) {
         var midi = sequence.getMidi(this.stepIndex);
-        midiOut.noteOn(midi[0], midi[1]);
+        //midiOut.noteOn(midi[0], midi[1]);
+        keyboard.getKey(midi[0]).pressedPosition();
+
         var noteOff;
         if (this.stepIndex != 0) {
             noteOff = sequence.getNote(this.stepIndex - 1);
-            midiOut.noteOff(noteOff, 10);
+        } else {
+            noteOff = sequence.getNote(sequence.getLength()-1);
         }
+        midiOut.noteOff(noteOff, 10);
+        keyboard.getKey(noteOff).resetPosition();
 
         this.stepIndex++;
    }
 
-   if (this.stepIndex >= sequence.getLength()) {
-        this.stepIndex = 0;
-        world.isPaused = true;
-    }
+   if (this.stepIndex >= sequence.getLength()) { // if we're at the last step
+       this.lastStep = true;
+       this.stepIndex--;
+   }
 
-    var step = sequence.getStepSize(this.stepIndex);
-    this.strideLength = lerp(0.1, this.strideLength, 0.5 * step);
+
     this.x += 4 * this.speed * elapsed * this.strideLength;
 
     // determines what type of step
@@ -154,6 +93,20 @@ FigureData.prototype.update = function(elapsed, keyboard) {
         this.floorR = lerp(0.1, this.floorR, isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
     }
 
+    if (Math.abs(this.xR - this.xL) < 0.15) { // make better way to figure out when weight is on one foot
+      //console.log("step index: " + this.stepIndex);
+      this.strideLength = 0.5 * sequence.getStepSize(this.stepIndex);
+      console.log("step " + this.stepIndex + " - " + sequence.getStepSize(this.stepIndex));
+
+      if (this.lastStep) {  // POORLY ABSTRACTED
+        this.initSequence(keyboard);
+        this.stepIndex = 0;
+        this.lastStep = false;
+       }
+
+    }
+
+    //console.log("last step " + this.lastStep);
 }
 
 /*

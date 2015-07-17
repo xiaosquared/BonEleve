@@ -6,7 +6,7 @@ function Key(midi, x, y, isBlack) {
     this.midi = midi;
     this.x = x;
     this.y = y;
-    this.pressedY = y + 0.5;
+    this.pressedY = y - 0.5;
     this.isBlack = isBlack;
     this.geometry = node();
 }
@@ -110,14 +110,14 @@ MidiOut.prototype.noteOn = function(note, velocity) {
     velocity = velocity || 30;
     var noteOnMessage = [144, note, velocity];
     this.output.value.send(noteOnMessage);
-    console.log("Note On: " + noteOnMessage);
+    //console.log("Note On: " + noteOnMessage);
 };
 MidiOut.prototype.noteOff = function(note, velocity) {
     velocity = velocity || 30;
     var noteOffMessage = [128, note, velocity];
     for (var i = 0; i < 10; i++)
         this.output.value.send(noteOffMessage);
-    console.log("Note Off: " + noteOffMessage);
+    //console.log("Note Off: " + noteOffMessage);
 };
 MidiOut.prototype.sendMsg = function(msg, time) {
     this.output.value.send(msg, time);

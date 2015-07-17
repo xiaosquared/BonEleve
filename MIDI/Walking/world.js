@@ -22,7 +22,12 @@ World.prototype.calibrate = function(calibration) {
     var scale = calibration.getWidth()/89;
     this.root.scale.set(scale, scale, scale);
 }
-
+World.prototype.pause = function() {
+    this.isPaused = true;
+}
+World.prototype.start = function() {
+    this.isPaused = false;
+}
 World.prototype.setup = function() {
     this.renderer.setSize(width(), height());
     document.body.appendChild(this.renderer.domElement);
@@ -83,15 +88,15 @@ Calibration.prototype.getYfromX = function(x) {
     return percent * this.getHeightDiff() + this.getOffsetY();
 }
 addEventListener("keydown", function(event) {
-    console.log("key! " + event.keyCode);
+    //console.log("key! " + event.keyCode);
 
     var recalibrate = true;
     switch (event.keyCode) {
         case 13:
             world.isPaused = !world.isPaused;
             midiOut.flushNotes();
-            walkingNote.initSequence(sequence);
-            console.log("seq length " + sequence.getLength());
+            walkingNote.initSequence(keyboard);
+            //console.log("seq length " + sequence.getLength());
 
             recalibrate = false;
             break;
