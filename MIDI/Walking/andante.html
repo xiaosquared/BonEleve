@@ -37,9 +37,9 @@
         <a onclick='ascend();'>ascend</a>
         <a onclick='descend();'>descend</a>
         <br>
-        <a onclick='test();'>chromatic</a>
-        <a onclick='test();'>whole tone</a>
-        <a onclick='test();'>diminished</a>
+        <a onclick='//setScale(sequence, chromatic); //sequence = chromatic;'>chromatic</a>
+        <a onclick='//setScale(sequence, wholetone); //sequence = wholetone;'>whole tone</a>
+        <a onclick='//setScale(sequence, diminished); //sequence = diminished;'>diminished</a>
         <div>
 
         <script src = "./lib/three.min.js"></script>
@@ -62,7 +62,10 @@ calibration.addToScene(world.scene);
 var keyboard = new Keyboard(calibration);
 keyboard.addToScene(world.material, world.darkMaterial, world.root);
 
-var sequence = new Chromatic(30);//AlteredScale(84);//new StepSequence();
+var chromatic = new Chromatic(22);//AlteredScale(84);//new StepSequence();
+var wholetone = new WholeTone(22);
+var diminished = new Diminished(22);
+var sequence = chromatic;
 
 var walkingNote = new FigureData(keyboard);
 walkingNote.initSequence(sequence, keyboard);
@@ -93,14 +96,22 @@ animate(world, walkingNote, puppet);
 
 function ascend() {
     console.log("go up!");
-    walkingNote.setDirection(puppet, true);
-    sequence.setDirection(true);
+    walkingNote.queueTurn = true;
+    //walkingNote.setDirection(puppet, true);
+    //sequence.setDirection(true);
 }
 
 function descend() {
     console.log("go down!");
-    walkingNote.setDirection(puppet, false);
-    sequence.setDirection(false);
+    walkingNote.queueTurn = true;
+    //walkingNote.setDirection(puppet, false);
+    //sequence.setDirection(false);
+}
+
+function setScale(sequence, scale) {
+    scale.step = sequence.step;
+    scale.prevStep = sequence.prevStep;
+    scale.faceUp = sequence.faceUp;
 }
 
 function test() {

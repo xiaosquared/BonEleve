@@ -25,10 +25,12 @@ function FigureData(keyboard) {
     this.floorL = keyboard.whiteKeyHeight;
     this.floorR = keyboard.whiteKeyHeight;
     this.faceUp = true;
+    this.queueTurn = false;
 
     // moving around
     this.defaultSpeed = 0.5;
     this.lastStep = false;
+
 
 }
 FigureData.prototype.initSequence = function(sequence, keyboard) {
@@ -52,7 +54,6 @@ FigureData.prototype.update = function(elapsed, keyboard) {
     if (tPrev % 0.5 > this.t % 0.5) {
         handleMIDI(sequence, keyboard);
         var last = sequence.incrementStep();
-
         if (last)
             this.lastStep = true;
     }
@@ -66,6 +67,12 @@ FigureData.prototype.update = function(elapsed, keyboard) {
     moveFoot((this.t + 0.5) % 1.0, this, keyboard, isBlack, false);
 
     if (shiftWeight(this)) {
+        if (this.queueTurn) {
+            sequence.turn();
+            this.setDirection(puppet, !this.faceUp);
+            this.queueTurn = false;
+        }
+
         this.strideLength = 0.5 * sequence.getNextStep().stepSize;
         if (sequence.getPrevStep())
             this.x = keyboard.getKey(sequence.getPrevStep().midi).x;

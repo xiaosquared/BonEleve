@@ -67,6 +67,7 @@ StepSequence.prototype.getSpeed = function(index) {
 StepSequence.prototype.isBlack = function(keyboard) {
     return keyboard.isBlack(this.getNextStep().midi - 20);
 }
+StepSequence.prototype.turn = function() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 function Scale(start, stepSizes) {
@@ -78,23 +79,8 @@ function Scale(start, stepSizes) {
     this.step = new Step(1, start);
 
     this.goingUp = true;
-
-    // var step = new Step(1, start);
-    // this.steps.push(step);
-    // for (var i = 0; i < this.stepSizes.length; i ++) {
-    //     var prevNote = this.steps[i].midi;
-    //     var step = new Step(this.stepSizes[i], prevNote + this.stepSizes[i]);
-    //     this.steps.push(step);
-    // }
 }
 Scale.prototype = Object.create(StepSequence.prototype);
-Scale.prototype.setDirection = function(goingUp) {
-    // if (this.goingUp == goingUp)
-    //     return;
-    // this.goingUp = goingUp;
-    // if (goingUp)
-    //     this.prevStep =
-}
 Scale.prototype.printNotes = function(){
     var str = "";
     var prevNote = this.step.midi;
@@ -110,7 +96,36 @@ Scale.prototype.getInitialPosition = function() {
     var index = this.step.midi - 22;
     return keyboard.keys[index].x - 0.5;
 }
-Scale.prototype.incrementStep = function(figure) {
+Scale.prototype.turn = function() {
+    this.goingUp = !this.goingUp;
+
+    console.log("step index : " + this.stepIndex);
+    console.log("prev step midi " + this.prevStep.midi);
+    console.log("step index points to " + this.stepSizes[this.stepIndex]);
+
+    if (this.goingUp) {
+        this.stepIndex = (this.stepIndex + 2) % this.stepSizes.length;
+        var stepSize = this.stepSizes[this.stepIndex];
+        this.step = new Step(stepSize, this.prevStep.midi + stepSize);
+    } else {
+        if (this.stepIndex == 0) {
+            if (this.stepSizes.length > 1)
+                this.stepIndex = this.stepSizes.length - 2;
+            else
+                this.stepIndex = 0;
+        }
+        else if (this.stepIndex == 1)
+            this.stepIndex = 0;
+        else
+            this.stepIndex -= 2;
+        var stepSize = this.stepSizes[this.stepIndex];
+        this.step = new Step(stepSize, this.prevStep.midi - stepSize);
+    }
+
+    console.log("new step index " + this.stepIndex);
+    console.log("new step " + this.stepIndex);
+}
+Scale.prototype.incrementStep = function() {
     if (this.goingUp) {
         this.stepIndex++;
         if (this.stepIndex == this.stepSizes.length) {
@@ -130,6 +145,8 @@ Scale.prototype.incrementStep = function(figure) {
         this.step = new Step(stepSize, prevNote - stepSize);
     return false;
 }
+
+
 Scale.prototype.getNextStep = function() {
     return this.step;
 }
@@ -137,27 +154,19 @@ Scale.prototype.getPrevStep = function() {
     return this.prevStep;
 }
 
-function Chromatic(start) {
-    Scale.call(this, start || 22, [1, 1, 1, 1]);
-}
+function Chromatic(start) { Scale.call(this, start || 22, [1, 1]); }
 Chromatic.prototype = Object.create(Scale.prototype);
-// Chromatic.prototype.incrementStep = function() {
-//     this.stepIndex ++;
-//     if (this.stepIndex > 1)
-//         this.stepIndex = 0;
-// }
-// Chromatic.prototype.getNextStep = function() {
-//
-// }
 
-function AlteredScale(start) {
-    Scale.call(this, start || 60, [1, 2, 1, 2, 2, 2, 2]);
-}
+function WholeTone(start) { Scale.call(this, start || 22, [2, 2]);}
+WholeTone.prototype = Object.create(Scale.prototype);
+
+function Diminished(start) { Scale.call(this, start || 22, [1, 2]);}
+Diminished.prototype = Object.create(Scale.prototype);
+
+function AlteredScale(start) { Scale.call(this, start || 60, [1, 2, 1, 2, 2, 2, 2]);}
 AlteredScale.prototype = Object.create(Scale.prototype);
 
-function NaturalMinor(start) {
-    Scale.call(this, start || 60, [2, 1, 2, 2, 1, 2, 2]);
-}
+function NaturalMinor(start) {Scale.call(this, start || 60, [2, 1, 2, 2, 1, 2, 2]);}
 NaturalMinor.prototype = Object.create(Scale.prototype);
 
 var cMajor = new Scale(60);
