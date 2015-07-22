@@ -24,14 +24,14 @@ function FigureData(keyboard) {
     this.Rlift = 0;
     this.floorL = keyboard.whiteKeyHeight;
     this.floorR = keyboard.whiteKeyHeight;
+
+    // flags
     this.faceUp = true;
     this.queueTurn = false;
-
-    // moving around
-    this.defaultSpeed = 0.5;
     this.lastStep = false;
-
-
+}
+FigureData.prototype.setSpeed = function(speed) {
+    this.speed = speed;
 }
 FigureData.prototype.initSequence = function(sequence, keyboard) {
     this.stepIndex = 0;
@@ -50,10 +50,10 @@ FigureData.prototype.update = function(elapsed, keyboard) {
         return;
 
     var tPrev = this.t;
-    this.t += this.defaultSpeed * elapsed;
+    this.t += this.speed * elapsed;
     if (tPrev % 0.5 > this.t % 0.5) {
         handleMIDI(sequence, keyboard);
-        var last = sequence.incrementStep();
+        var last = sequence.incrementStep(this);
         if (last)
             this.lastStep = true;
     }

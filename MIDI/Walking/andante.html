@@ -13,14 +13,24 @@
             font-weight: bold;
             overflow: hidden;
         }
+        #title {
+            position: absolute;
+            top: 0px; width: 100%;
+            color: #ffffff;
+            padding: 20px;
+            font-family:Monospace;
+            font-size:30px;
+            text-align:center;
+            z-index:1000;
+        }
 
-        #info {
+        #menu {
 				position: absolute;
-				top: 0px; width: 100%;
+				top:40px; width: 100%;
 				color: #ffffff;
 				padding: 20px;
 				font-family:Monospace;
-				font-size:18px;
+				font-size:12px;
 				text-align:center;
 				z-index:1000;
 			}
@@ -32,14 +42,24 @@
         </style>
     </head>
     <body>
-        <div id="info">Andante
+        <div id="title">- Andante Scale Player -</div>
         <br>
+        <div id="menu">
+        (Hit Enter to pause/play)
+        <br><br>
+        Direction:
         <a onclick='ascend();'>ascend</a>
         <a onclick='descend();'>descend</a>
         <br>
-        <a onclick='//setScale(sequence, chromatic); //sequence = chromatic;'>chromatic</a>
-        <a onclick='//setScale(sequence, wholetone); //sequence = wholetone;'>whole tone</a>
-        <a onclick='//setScale(sequence, diminished); //sequence = diminished;'>diminished</a>
+        Type:
+        <a onclick='setScale(sequence, chromatic); sequence = chromatic;'>chromatic</a>
+        <a onclick='setScale(sequence, wholetone); sequence = wholetone;'>whole tone</a>
+        <a onclick='setScale(sequence, diminished); sequence = diminished;'>diminished</a>
+        <br>
+        Speed: <a onclick='walkingNote.setSpeed(0.5);'>0.5</a>
+        <a onclick='walkingNote.setSpeed(1);'>1</a>
+        <a onclick='walkingNote.setSpeed(2);'>2</a>
+
         <div>
 
         <script src = "./lib/three.min.js"></script>
@@ -111,7 +131,7 @@ function descend() {
 function setScale(sequence, scale) {
     scale.step = sequence.step;
     scale.prevStep = sequence.prevStep;
-    scale.faceUp = sequence.faceUp;
+    scale.goingUp = sequence.goingUp;
 }
 
 function test() {

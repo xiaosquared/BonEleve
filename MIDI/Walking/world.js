@@ -19,7 +19,7 @@ World.prototype.calibrate = function(calibration) {
     this.root.position.x = calibration.getOffsetX();
     this.root.position.y = calibration.getOffsetY();
     this.root.rotation.z = Math.atan2(calibration.getHeightDiff(), calibration.getWidth());
-    var scale = calibration.getWidth()/89 * 2;
+    var scale = calibration.getWidth()/89;
     this.root.scale.set(scale, scale, scale);
 }
 World.prototype.pause = function() {

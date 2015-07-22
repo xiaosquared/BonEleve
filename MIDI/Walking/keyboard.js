@@ -31,7 +31,8 @@ function Keyboard(calibration) {
     this.keyWidth = 0.4;
     this.keyHeight = 0.1;
     this.geometry = node();
-
+    this.midiMax = 108;
+    this.midiMin = 21;
 
     this.keys = [];
     for (var i = 1; i < 89; i++) {

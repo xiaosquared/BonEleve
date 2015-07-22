@@ -71,7 +71,6 @@ StepSequence.prototype.turn = function() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 function Scale(start, stepSizes) {
-    var firstNote = start || 60;
     this.stepSizes = stepSizes || [2, 2, 1, 2, 2, 2, 1];
     this.stepIndex = 0;
 
@@ -125,27 +124,37 @@ Scale.prototype.turn = function() {
     console.log("new step index " + this.stepIndex);
     console.log("new step " + this.stepIndex);
 }
-Scale.prototype.incrementStep = function() {
-    if (this.goingUp) {
-        this.stepIndex++;
-        if (this.stepIndex == this.stepSizes.length) {
-            this.stepIndex = 0;
-        }
-    } else {
-        this.stepIndex--;
-        if (this.stepIndex < 0)
-            this.stepIndex = this.stepSizes.length - 1;
-    }
+Scale.prototype.incrementStep = function(figure) {
+    this.StepIndex = this.getNextStepIndex(this.stepIndex);
+
     this.prevStep = this.step;
     var prevNote = this.step.midi;
-    var stepSize = this.stepSizes[this.stepIndex];
-    if (this.goingUp)
-        this.step = new Step(stepSize, prevNote + stepSize);
-    else
-        this.step = new Step(stepSize, prevNote - stepSize);
+    var nextStepSize = this.stepSizes[this.stepIndex];
+
+    if (this.goingUp) {
+        if (prevNote + nextStepSize > keyboard.midiMax)
+            figure.queueTurn = true;
+        this.step = new Step(nextStepSize, prevNote + nextStepSize);
+    } else {
+        if (prevNote - nextStepSize < keyboard.midiMin)
+            figure.queueTurn = true;
+        this.step = new Step(nextStepSize, prevNote - nextStepSize);
+    }
     return false;
 }
-
+Scale.prototype.getNextStepIndex = function(stepIndex) {
+    if (this.goingUp) {
+        stepIndex++;
+        if (stepIndex == this.stepSizes.length)
+            return 0;
+    }
+    else {
+        stepIndex--;
+        if (stepIndex < 0)
+            return this.stepSizes.length - 1;
+    }
+    return stepIndex;
+}
 
 Scale.prototype.getNextStep = function() {
     return this.step;
