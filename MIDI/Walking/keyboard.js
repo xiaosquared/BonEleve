@@ -45,7 +45,6 @@ function Keyboard(calibration) {
     console.log("x1: " + this.keys[1].x);
     console.log(this.keys.length);
 }
-
 Keyboard.prototype.isBlack= function(num) {
     var isBlack = [2, 5, 7, 10, 0]; //[1, 4, 6, 9, 11];
     for (var i = 0; i < isBlack.length; i++) {
@@ -54,7 +53,6 @@ Keyboard.prototype.isBlack= function(num) {
     }
     return false;
 }
-
 Keyboard.prototype.calibrate = function(calibration) {
     for (var i = 1; i < 89; i++) {
         var x = i;
@@ -84,7 +82,6 @@ Keyboard.prototype.getNextKeyFromX = function(x) {
         }
     }
 }
-
 Keyboard.prototype.addToScene = function(material, darkMaterial, root) {
     root.add(this.geometry);
     for (var i = 0; i < this.keys.length; i ++) {
@@ -139,25 +136,25 @@ MidiOut.prototype.flushNotes = function() {
 }
 
 var midiOut;
-navigator.requestMIDIAccess().then(
-    function(midiAccess) {
-        console.log("Success!");
-        var input = midiAccess.inputs.values().next();
-        if (input)
-            input.value.onmidimessage = onMIDIMessage;
-
-        var output = midiAccess.outputs.values().next();
-        if (output)
-            midiOut = new MidiOut(output);
-
-        if (!input || !output) {
-            console.log("something wrong with IO");
-            return null;
-        }
-
-    },
-    function(err) { console.log("Failed to get MIDI access - " + err); }
-);
+// navigator.requestMIDIAccess().then(
+//     function(midiAccess) {
+//         console.log("Success!");
+//         var input = midiAccess.inputs.values().next();
+//         if (input)
+//             input.value.onmidimessage = onMIDIMessage;
+//
+//         var output = midiAccess.outputs.values().next();
+//         if (output)
+//             midiOut = new MidiOut(output);
+//
+//         if (!input || !output) {
+//             console.log("something wrong with IO");
+//             return null;
+//         }
+//
+//     },
+//     function(err) { console.log("Failed to get MIDI access - " + err); }
+// );
 
 function onMIDIMessage(event) {
     var data = event.data,

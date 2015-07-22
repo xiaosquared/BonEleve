@@ -5,7 +5,7 @@ function FigureData(keyboard) {
     // Constants
     this.size = 1;
     this.limbLength = 2.3;
-    this.limbRadius = 0.15;
+    this.limbRadius = 0.2;
     this.footLift = 0.9;
     this.hipsForward = 0.3;
     this.hipsApart = 1.3;
@@ -24,89 +24,90 @@ function FigureData(keyboard) {
     this.Rlift = 0;
     this.floorL = keyboard.whiteKeyHeight;
     this.floorR = keyboard.whiteKeyHeight;
+    this.faceUp = true;
 
     // moving around
-    this.prevKey = null;
-    this.stepIndex = 0;
-
-    this.speed = 0.5;
-
+    this.defaultSpeed = 0.5;
     this.lastStep = false;
+
 }
-FigureData.prototype.initSequence = function(keyboard) {
+FigureData.prototype.initSequence = function(sequence, keyboard) {
     this.stepIndex = 0;
     this.x = sequence.getInitialPosition(keyboard);
 }
-
+FigureData.prototype.setDirection = function(figurePuppet, up) {
+    this.faceUp = up;
+    if (this.faceUp)
+        this.hipsForward = Math.abs(this.hipsForward);
+    else
+        this.hipsForward = -Math.abs(this.hipsForward);
+    figurePuppet.setDirection(this, this.faceUp);
+}
 FigureData.prototype.update = function(elapsed, keyboard) {
-    if (world.isPaused) {
-        this.stepIndex = 0;
+    if (world.isPaused)
         return;
-    }
 
     var tPrev = this.t;
-    //this.speed = sequence.getSpeed(this.stepIndex);
-    this.t += this.speed * elapsed;
-
-
+    this.t += this.defaultSpeed * elapsed;
     if (tPrev % 0.5 > this.t % 0.5) {
-        var midi = sequence.getMidi(this.stepIndex);
-        //midiOut.noteOn(midi[0], midi[1]);
-        keyboard.getKey(midi[0]).pressedPosition();
+        handleMIDI(sequence, keyboard);
+        var last = sequence.incrementStep();
 
-        var noteOff;
-        if (this.stepIndex != 0) {
-            noteOff = sequence.getNote(this.stepIndex - 1);
-        } else {
-            noteOff = sequence.getNote(sequence.getLength()-1);
+        if (last)
+            this.lastStep = true;
+    }
+
+    var deltaX = 4 * this.speed * elapsed * this.strideLength;
+    if (this.faceUp) { this.x += deltaX;}
+    else { this.x -= deltaX; }
+
+    var isBlack = sequence.isBlack(keyboard);
+    moveFoot(this.t % 1.0, this, keyboard, isBlack, true);
+    moveFoot((this.t + 0.5) % 1.0, this, keyboard, isBlack, false);
+
+    if (shiftWeight(this)) {
+        this.strideLength = 0.5 * sequence.getNextStep().stepSize;
+        if (sequence.getPrevStep())
+            this.x = keyboard.getKey(sequence.getPrevStep().midi).x;
+
+        if (this.lastStep) {  // WHAT WE DO AT THE VERY END
+          this.lastStep = false;
         }
-        midiOut.noteOff(noteOff, 10);
-        keyboard.getKey(noteOff).resetPosition();
-
-        this.stepIndex++;
-   }
-
-   if (this.stepIndex >= sequence.getLength()) { // if we're at the last step
-       this.lastStep = true;
-       this.stepIndex--;
-   }
-
-
-    this.x += 4 * this.speed * elapsed * this.strideLength;
-
-    // determines what type of step
-    var f = this.t % 1.0;
-    this.Llift = this.footLift * max(0, -sin(TAU * f));
-    this.xL = this.strideLength * (f > 0.5 ? 4 * sCurve(f) - 3 : 1 - 4 * f);
-
-    if (f > 0.5) {
-        var isBlack = sequence.isBlack(this.stepIndex, keyboard);
-        this.floorL = lerp(0.1, this.floorL, isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
     }
 
-    f = (this.t + 0.5) % 1.0;
-    this.Rlift = this.footLift * max(0, -sin(TAU * f));
-    this.xR = this.strideLength * (f > 0.5 ? 4 * sCurve(f) - 3 : 1 - 4 * f);
+    function handleMIDI(sequence, keyboard) {
+        var step = sequence.getNextStep();
+        keyboard.getKey(step.midi).pressedPosition();
+        // output MIDI here
 
-    if (f > 0.5) {
-        var isBlack = sequence.isBlack(this.stepIndex, keyboard);
-        this.floorR = lerp(0.1, this.floorR, isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
+        var prevStep = sequence.getPrevStep();
+        if (prevStep) {
+            keyboard.getKey(prevStep.midi).resetPosition();
+            // output MIDI here
+        }
     }
 
-    if (Math.abs(this.xR - this.xL) < 0.15) { // make better way to figure out when weight is on one foot
-      //console.log("step index: " + this.stepIndex);
-      this.strideLength = 0.5 * sequence.getStepSize(this.stepIndex);
-      console.log("step " + this.stepIndex + " - " + sequence.getStepSize(this.stepIndex));
+    function moveFoot(f, figure, keyboard, isBLack, leftFoot) {
+        var lift = figure.footLift * max(0, -sin(TAU * f));
+        var dx = figure.strideLength * (f > 0.5 ? 4 * sCurve(f) - 3 : 1 - 4 * f);
+        if (!figure.faceUp) { dx = -dx; }
 
-      if (this.lastStep) {  // POORLY ABSTRACTED
-        this.initSequence(keyboard);
-        this.stepIndex = 0;
-        this.lastStep = false;
-       }
-
+        if (leftFoot) {
+            figure.Llift = lift;
+            figure.xL = dx;
+            if (f > 0.5)
+                figure.floorL = lerp(0.1, figure.floorL, isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
+        } else {
+            figure.Rlift = lift;
+            figure.xR = dx;
+            if (f > 0.5)
+                figure.floorR = lerp(0.1, figure.floorR, isBlack ? keyboard.blackKeyHeight : keyboard.whiteKeyHeight);
+        }
     }
 
-    //console.log("last step " + this.lastStep);
+    function shiftWeight(figure) {
+        return Math.abs(figure.xR - figure.xL) < 0.15;
+    }
 }
 
 /*
@@ -121,12 +122,14 @@ function FigurePuppet(material, root) {
     this.Lknee = globe(material);
     this.Lleg2 = node();
     this.Lfoot = node();
+    this.Lnote = globe(material);
 
     this.Rhip = globe(material);
     this.Rleg1 = node();
     this.Rknee = globe(material);
     this.Rleg2 = node();
     this.Rfoot = node();
+    this.Rnote = globe(material);
 }
 FigurePuppet.prototype.buildFigure = function(figureData, material) {
 
@@ -152,11 +155,10 @@ FigurePuppet.prototype.buildFigure = function(figureData, material) {
     this.Lleg1.add(Llim1);
     this.Lleg2.add(Llim2);
 
-    var Lnote = globe(material);
-    Lnote.position.set(r - nSize, 0, l/2);
-    Lnote.scale.set(nSize*1.05,nSize/2,nSize*0.8);
-    Lnote.rotation.y = 0.5;
-    this.Lleg2.add(Lnote);
+    this.Lnote.position.set(r - nSize, 0, l/2);
+    this.Lnote.scale.set(nSize*1.05,nSize/2,nSize*0.8);
+    this.Lnote.rotation.y = 0.5;
+    this.Lleg2.add(this.Lnote);
 
     var Rlim1 = cylinderZ(material);
     var Rlim2 = cylinderZ(material);
@@ -165,11 +167,10 @@ FigurePuppet.prototype.buildFigure = function(figureData, material) {
     this.Rleg1.add(Rlim1);
     this.Rleg2.add(Rlim2);
 
-    var Rnote = globe(material);
-    Rnote.position.set(r - nSize, 0, l/2);
-    Rnote.scale.set(nSize*1.05,nSize/2,nSize*0.8);
-    Rnote.rotation.y = 0.5;
-    this.Rleg2.add(Rnote);
+    this.Rnote.position.set(r - nSize, 0, l/2);
+    this.Rnote.scale.set(nSize*1.05,nSize/2,nSize*0.8);
+    this.Rnote.rotation.y = 0.5;
+    this.Rleg2.add(this.Rnote);
 
     this.body.add(this.pelvis);
     this.body.add(this.Lleg1);
@@ -183,6 +184,24 @@ FigurePuppet.prototype.addToScene = function(root) {
     root.add(this.body);
     this.body.rotation.x = -Math.PI / 2;
 }
+FigurePuppet.prototype.setDirection = function(figure, faceUp) {
+    var footTurn, footX;
+    if (faceUp) {
+        footTurn = 0.5;
+        footX = figure.limbRadius - figure.noteSize;
+
+    } else {
+        footTurn = -0.5;
+        footX = figure.limbRadius + figure.noteSize/2.5;
+    }
+
+    this.Lnote.rotation.y = footTurn;
+    this.Lnote.position.set(footX, 0, figure.limbLength/2);
+
+    this.Rnote.rotation.y = footTurn;
+    this.Rnote.position.set(footX, 0, figure.limbLength/2);
+}
+
 FigurePuppet.prototype.update = function(figureData) {
     this.body.position.x = figureData.x;
     this.body.position.y = figureData.y;
@@ -217,6 +236,8 @@ FigurePuppet.prototype.update = function(figureData) {
     d.set(1, 0, 0);
     ik(figureData.limbLength, figureData.limbLength, vec, d);
     this.Lknee.position.copy(this.Lhip.position);
+    if (!figureData.faceUp)
+        d.x = -d.x;
     this.Lknee.position.add(d);
 
     this.Lleg1.position.copy(this.Lhip.position).lerp(this.Lknee.position, 0.5);
@@ -227,6 +248,8 @@ FigurePuppet.prototype.update = function(figureData) {
     vec.copy(this.Rfoot.position).sub(this.Rhip.position);
     d.set(1, 0, 0);
     ik(figureData.limbLength, figureData.limbLength, vec, d);
+    if (!figureData.faceUp)
+        d.x = -d.x;
     this.Rknee.position.copy(this.Rhip.position).add(d);
 
     this.Rleg1.position.copy(this.Rhip.position).lerp(this.Rknee.position, 0.5);

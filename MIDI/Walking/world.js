@@ -13,13 +13,13 @@ function World(calibration) {
     this.material = phongMaterial(0xffffff, 0x000000, 0x000000, 30);
     this.darkMaterial = phongMaterial(0x202020, 0x000000, 0x000000, 20);
 
-    this.isPaused = true;
+    this.isPaused = false;
 }
 World.prototype.calibrate = function(calibration) {
     this.root.position.x = calibration.getOffsetX();
     this.root.position.y = calibration.getOffsetY();
     this.root.rotation.z = Math.atan2(calibration.getHeightDiff(), calibration.getWidth());
-    var scale = calibration.getWidth()/89;
+    var scale = calibration.getWidth()/89 * 2;
     this.root.scale.set(scale, scale, scale);
 }
 World.prototype.pause = function() {
@@ -94,10 +94,8 @@ addEventListener("keydown", function(event) {
     switch (event.keyCode) {
         case 13:
             world.isPaused = !world.isPaused;
-            midiOut.flushNotes();
-            walkingNote.initSequence(keyboard);
+            //midiOut.flushNotes();
             //console.log("seq length " + sequence.getLength());
-
             recalibrate = false;
             break;
         case 65: // L left ... A

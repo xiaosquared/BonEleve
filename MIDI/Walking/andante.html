@@ -9,6 +9,7 @@
             background: black;
             padding:0;
             margin: 0;
+            color:#ffffff;
             font-weight: bold;
             overflow: hidden;
         }
@@ -23,10 +24,23 @@
 				text-align:center;
 				z-index:1000;
 			}
+
+            a {
+				text-decoration: underline;
+				cursor: pointer;
+			}
         </style>
     </head>
     <body>
-        <div id="info">Andante</div>
+        <div id="info">Andante
+        <br>
+        <a onclick='ascend();'>ascend</a>
+        <a onclick='descend();'>descend</a>
+        <br>
+        <a onclick='test();'>chromatic</a>
+        <a onclick='test();'>whole tone</a>
+        <a onclick='test();'>diminished</a>
+        <div>
 
         <script src = "./lib/three.min.js"></script>
 
@@ -36,8 +50,64 @@
         <script src="./content.js" type="text/javascript"></script>
         <script src="./figure.js" type="text/javascript"></script>
 
-        <script src="./andante.js" type="text/javascript"></script>
+<script>
 
+var calibration = new Calibration();
+
+var world = new World(calibration);
+world.setup();
+
+calibration.addToScene(world.scene);
+
+var keyboard = new Keyboard(calibration);
+keyboard.addToScene(world.material, world.darkMaterial, world.root);
+
+var sequence = new Chromatic(30);//AlteredScale(84);//new StepSequence();
+
+var walkingNote = new FigureData(keyboard);
+walkingNote.initSequence(sequence, keyboard);
+
+var puppet = new FigurePuppet(world.material);
+puppet.buildFigure(walkingNote, world.material);
+puppet.addToScene(world.root);
+
+function animate() {
+    var time = (new Date()).getTime() / 1000;
+    var elapsed = this.time === undefined ? .03 : time - this.time;
+    //console.log(elapsed);
+    this.time = time;
+
+    walkingNote.update(elapsed, keyboard);
+    puppet.update(walkingNote);
+    world.render();
+
+    requestAnimationFrame(function() { animate(elapsed += 0.001); });
+}
+
+// When everything's done, call the loop
+animate(world, walkingNote, puppet);
+
+///////////////////
+// Clickty Click //
+///////////////////
+
+function ascend() {
+    console.log("go up!");
+    walkingNote.setDirection(puppet, true);
+    sequence.setDirection(true);
+}
+
+function descend() {
+    console.log("go down!");
+    walkingNote.setDirection(puppet, false);
+    sequence.setDirection(false);
+}
+
+function test() {
+    console.log("placeholder");
+}
+
+</script>
 
 
     </body>
