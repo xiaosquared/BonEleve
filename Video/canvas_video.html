@@ -1,0 +1,82 @@
+<html>
+<head>
+    <script type="text/javascript">
+
+    /*
+        Drawing parts of a video to a canvas and transforming it a little
+
+        Original Code from Sean Christmann
+        http://www.craftymind.com/factory/html5video/CanvasVideo3D.html
+    */
+
+    var video;
+    var copy;
+    var copycanvas;
+    var draw;
+
+    var SOURCERECT = {x:0, y:0, w:0, h:0};
+    var PAINTRECT = {x:0, y:0, w:1280, h:720};
+
+    var degree = 220;
+    var RAD = Math.PI/180;
+    var angle = degree*RAD;
+	var prepx = Math.cos(angle);
+	var prepz = Math.sin(angle);
+
+    var INTERVAL = 4;
+
+    function init() {
+        video = document.getElementById('video');
+        copycanvas = document.getElementById('videocopy');
+        copy = copycanvas.getContext('2d');
+        var outputcanvas = document.getElementById('output');
+        draw = outputcanvas.getContext('2d');
+        processFrame();
+    }
+
+
+    function processFrame() {
+        console.log("hi");
+        if (!isNaN(video.duration)) {
+            if (SOURCERECT.w == 0)
+                SOURCERECT = {x:0,y:0,w:video.videoWidth,h:video.videoHeight/2};
+            if (video.currentTIme == video.duration)
+                video.currentTIme = 0;
+        }
+
+        copy.drawImage(video, 0, 0);
+        draw.clearRect(PAINTRECT.x, PAINTRECT.y, PAINTRECT.w, PAINTRECT.h);
+
+        var centerx = PAINTRECT.w/2;
+	    var centery = PAINTRECT.h/2-50;
+	    var radius = SOURCERECT.w/2;
+
+        for (var i = 0; i < SOURCERECT.w; i+=INTERVAL) {
+            var dist = radius - i;
+            var x = prepx*dist;
+		    var y = 0;
+		    var z = prepz*dist;
+		    var height = SOURCERECT.h+(z*0.5);
+
+            var _x = Math.round(x+centerx);
+    		var _y = y+centery;
+
+            draw.drawImage(copycanvas, i, 0, 4, SOURCERECT.h, _x, _y-(height/2), 4, height);
+        }
+        requestAnimationFrame(processFrame);
+    }
+
+    </script>
+</head>
+
+<body onload="init();">
+    <div style="display:none">
+        <video id="video" autoplay="true" loop="true">
+            <source src="hands.mov" type="video/mp4">
+        </video>
+        <canvas id="videocopy" width="1280" height="720"></canvas>
+    </div>
+        <center><canvas id="output" width="1280" height="720"></canvas>
+</body>
+
+</html>
