@@ -241,10 +241,10 @@ FigurePuppet.prototype.update = function(figureData) {
 
     vec.copy(this.Lfoot.position).sub(this.Lhip.position);
     d.set(1, 0, 0);
+    if (!figureData.faceUp)
+        d.set(-1, 0, 0);
     ik(figureData.limbLength, figureData.limbLength, vec, d);
     this.Lknee.position.copy(this.Lhip.position);
-    if (!figureData.faceUp)
-        d.x = -d.x;
     this.Lknee.position.add(d);
 
     this.Lleg1.position.copy(this.Lhip.position).lerp(this.Lknee.position, 0.5);
@@ -254,9 +254,9 @@ FigurePuppet.prototype.update = function(figureData) {
 
     vec.copy(this.Rfoot.position).sub(this.Rhip.position);
     d.set(1, 0, 0);
-    ik(figureData.limbLength, figureData.limbLength, vec, d);
     if (!figureData.faceUp)
-        d.x = -d.x;
+        d.set(-1, 0, 0);
+    ik(figureData.limbLength, figureData.limbLength, vec, d);
     this.Rknee.position.copy(this.Rhip.position).add(d);
 
     this.Rleg1.position.copy(this.Rhip.position).lerp(this.Rknee.position, 0.5);

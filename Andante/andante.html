@@ -59,7 +59,8 @@
         Speed: <a onclick='walkingNote.setSpeed(0.5);'>0.5</a>
         <a onclick='walkingNote.setSpeed(1);'>1</a>
         <a onclick='walkingNote.setSpeed(2);'>2</a>
-
+        <br>
+        <a onclick='setScale(sequence, arpeggio); sequence = arpeggio;'>broken leg bug</a>
         <div>
 
         <script src = "./lib/three.min.js"></script>
@@ -85,6 +86,7 @@ keyboard.addToScene(world.material, world.darkMaterial, world.root);
 var chromatic = new Chromatic(22);//AlteredScale(84);//new StepSequence();
 var wholetone = new WholeTone(22);
 var diminished = new Diminished(22);
+var arpeggio = new Arpeggio(22);
 var sequence = chromatic;
 
 var walkingNote = new FigureData(keyboard);
