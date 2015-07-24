@@ -6,31 +6,31 @@
         <style>
 
         body {
-            background: black;
+            background: #151515;
             padding:0;
             margin: 0;
-            color:#ffffff;
+            color:#dddddd;
             font-weight: bold;
             overflow: hidden;
         }
         #title {
             position: absolute;
-            top: 0px; width: 100%;
-            color: #ffffff;
+            left: -70px; top: 100px; width: 100%;
+            color: #f0f0f0;
             padding: 20px;
-            font-family:Monospace;
-            font-size:30px;
+            font-family: monospace;
+            font-size:32px;
             text-align:center;
             z-index:1000;
         }
 
         #menu {
 				position: absolute;
-				top:40px; width: 100%;
-				color: #ffffff;
+				left: -70px; top:145px; width: 100%;
+				color: #aaaaaa;
 				padding: 20px;
-				font-family:Monospace;
-				font-size:12px;
+				font-family: monospace;
+				font-size:11px;
 				text-align:center;
 				z-index:1000;
 			}
@@ -43,24 +43,20 @@
     </head>
     <body>
         <div id="title">- Andante Scale Player -</div>
-        <br>
         <div id="menu">
-        (Hit Enter to pause/play)
-        <br><br>
-        Direction:
-        <a onclick='ascend();'>ascend</a>
-        <a onclick='descend();'>descend</a>
+            (Enter to pause/play, Space to toggle between browser/piano modes)
+            <br><br>
+        <a onclick='setScale(sequence, chromatic); sequence = chromatic;'>Chromatic</a> |
+        <a onclick='setScale(sequence, wholetone); sequence = wholetone;'>Whole tone</a> |
+        <a onclick='setScale(sequence, diminished); sequence = diminished;'>Diminished</a> |
+        <a onclick='setScale(sequence, arpeggio); sequence = arpeggio;'>Diminished 7th</a>
         <br>
-        Type:
-        <a onclick='setScale(sequence, chromatic); sequence = chromatic;'>chromatic</a>
-        <a onclick='setScale(sequence, wholetone); sequence = wholetone;'>whole tone</a>
-        <a onclick='setScale(sequence, diminished); sequence = diminished;'>diminished</a>
-        <br>
+        Direction: <a onclick='ascend();'>Up</a>
+        <a onclick='descend();'>Down</a>  |
         Speed: <a onclick='walkingNote.setSpeed(0.5);'>0.5</a>
         <a onclick='walkingNote.setSpeed(1);'>1</a>
         <a onclick='walkingNote.setSpeed(2);'>2</a>
-        <br>
-        <a onclick='setScale(sequence, arpeggio); sequence = arpeggio;'>broken leg bug</a>
+
         <div>
 
         <script src = "./lib/three.min.js"></script>
@@ -69,6 +65,7 @@
         <script src="./world.js" type="text/javascript"></script>
         <script src="./keyboard.js" type="text/javascript"></script>
         <script src="./content.js" type="text/javascript"></script>
+        <script src="./notation.js" type="text/javascript"></script>
         <script src="./figure.js" type="text/javascript"></script>
 
 <script>
@@ -80,21 +77,26 @@ world.setup();
 
 calibration.addToScene(world.scene);
 
-var keyboard = new Keyboard(calibration);
+var keyboard = new Keyboard();
 keyboard.addToScene(world.material, world.darkMaterial, world.root);
 
-var chromatic = new Chromatic(22);//AlteredScale(84);//new StepSequence();
-var wholetone = new WholeTone(22);
-var diminished = new Diminished(22);
-var arpeggio = new Arpeggio(22);
+var staff = new Staff();
+staff.addToScene(world.material, world.darkMaterial, world.root, calibration);
+
+var chromatic = new Chromatic(60);//AlteredScale(84);//new StepSequence();
+var wholetone = new WholeTone(60);
+var diminished = new Diminished(60);
+var arpeggio = new Arpeggio(60);
 var sequence = chromatic;
 
 var walkingNote = new FigureData(keyboard);
 walkingNote.initSequence(sequence, keyboard);
 
-var puppet = new FigurePuppet(world.material);
-puppet.buildFigure(walkingNote, world.material);
+var puppet = new FigurePuppet(world.material, world.medMaterial);
+puppet.buildFigure(walkingNote, world.material, world.medMaterial);
 puppet.addToScene(world.root);
+
+world.pause();
 
 function animate() {
     var time = (new Date()).getTime() / 1000;

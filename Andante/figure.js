@@ -12,7 +12,9 @@ function FigureData(keyboard) {
     this.feetApart = 1.0;
     this.noteSize = 0.5;
     this.strideLength = 0.5;
-    this.speed = 0.5;
+    this.headHeight = 2;
+    this.headSize = 0.5;
+    this.speed = 1;
 
     // moving parts
     this.t = 0;
@@ -24,6 +26,8 @@ function FigureData(keyboard) {
     this.Rlift = 0;
     this.floorL = keyboard.whiteKeyHeight;
     this.floorR = keyboard.whiteKeyHeight;
+    this.headBob = 0;
+    this.note = 0;
 
     // flags
     this.faceUp = true;
@@ -52,7 +56,7 @@ FigureData.prototype.update = function(elapsed, keyboard) {
     var tPrev = this.t;
     this.t += this.speed * elapsed;
     if (tPrev % 0.5 > this.t % 0.5) {
-        handleMIDI(sequence, keyboard);
+        this.note = handleMIDI(sequence, keyboard);
         var last = sequence.incrementStep(this);
         if (last)
             this.lastStep = true;
@@ -61,6 +65,8 @@ FigureData.prototype.update = function(elapsed, keyboard) {
     var deltaX = 4 * this.speed * elapsed * this.strideLength;
     if (this.faceUp) { this.x += deltaX;}
     else { this.x -= deltaX; }
+
+    this.headBob = -cos(TAU * (this.t*2 % 1));
 
     var isBlack = sequence.isBlack(keyboard);
     moveFoot(this.t % 1.0, this, keyboard, isBlack, true);
@@ -85,13 +91,14 @@ FigureData.prototype.update = function(elapsed, keyboard) {
     function handleMIDI(sequence, keyboard) {
         var step = sequence.getNextStep();
         keyboard.getKey(step.midi).pressedPosition();
-        // output MIDI here
+        //midiOut.noteOn(step.midi, 10);
 
         var prevStep = sequence.getPrevStep();
         if (prevStep) {
             keyboard.getKey(prevStep.midi).resetPosition();
-            // output MIDI here
+            //midiOut.noteOff(prevStep.midi, 10);
         }
+        return step.midi;
     }
 
     function moveFoot(f, figure, keyboard, isBLack, leftFoot) {
@@ -120,16 +127,16 @@ FigureData.prototype.update = function(elapsed, keyboard) {
 /*
     Keeps track of Figure's 3D rendered parts
 */
-function FigurePuppet(material, root) {
+function FigurePuppet(material, material2) {
     this.body = node();
     this.pelvis = cylinderZ(material);
 
-    this.Lhip = globe(material);
+    this.Lhip = globe(material2);
     this.Lleg1 = node();
-    this.Lknee = globe(material);
+    this.Lknee = globe(material2);
     this.Lleg2 = node();
     this.Lfoot = node();
-    this.Lnote = globe(material);
+    this.Lnote = globe(material2);
 
     this.Rhip = globe(material);
     this.Rleg1 = node();
@@ -137,13 +144,19 @@ function FigurePuppet(material, root) {
     this.Rleg2 = node();
     this.Rfoot = node();
     this.Rnote = globe(material);
+
+    this.head = globe(material);
 }
-FigurePuppet.prototype.buildFigure = function(figureData, material) {
+FigurePuppet.prototype.buildFigure = function(figureData, material, material2) {
 
     var r = figureData.limbRadius;
     var hipWidth = figureData.hipsApart;
     var l = figureData.limbLength;
     var nSize = figureData.noteSize;
+    var hSize = figureData.headSize;
+
+    this.head.scale.set(hSize*0.8,hSize/2,hSize);
+    this.head.rotation.y = -0.5;
 
     this.pelvis.scale.set(r, r, 1.0);
     this.Lhip.scale.set(r, r, r);
@@ -155,8 +168,8 @@ FigurePuppet.prototype.buildFigure = function(figureData, material) {
     this.Rhip.position.y = -hipWidth/2;
     this.Rhip.position.z = 2;
 
-    var Llim1 = cylinderZ()//material);
-    var Llim2 = cylinderZ()//material);
+    var Llim1 = cylinderZ(material2);
+    var Llim2 = cylinderZ(material2);
     Llim1.scale.set(r, r, l/2);
     Llim2.scale.set(r, r, l/2);
     this.Lleg1.add(Llim1);
@@ -179,6 +192,7 @@ FigurePuppet.prototype.buildFigure = function(figureData, material) {
     this.Rnote.rotation.y = 0.5;
     this.Rleg2.add(this.Rnote);
 
+    this.body.add(this.head);
     this.body.add(this.pelvis);
     this.body.add(this.Lleg1);
     this.body.add(this.Lknee);
@@ -202,6 +216,8 @@ FigurePuppet.prototype.setDirection = function(figure, faceUp) {
         footX = figure.limbRadius + figure.noteSize/2.5;
     }
 
+    this.head.rotation.y = -footTurn;
+
     this.Lnote.rotation.y = footTurn;
     this.Lnote.position.set(footX, 0, figure.limbLength/2);
 
@@ -223,8 +239,6 @@ FigurePuppet.prototype.update = function(figureData) {
     this.Lhip.position.x = figureData.hipsForward;
     this.Rhip.position.x = figureData.hipsForward;
 
-    //console.log("Lfoot x: " + this.Lfoot.position.x);
-    //console.log("Rfoot x: " + this.Rfoot.position.x);
 
     var s = sqrt(figureData.limbLength * figureData.limbLength +
                 figureData.hipsForward * figureData.hipsForward);
@@ -235,6 +249,13 @@ FigurePuppet.prototype.update = function(figureData) {
 
     this.pelvis.position.copy(this.Lhip.position).lerp(this.Rhip.position, 0.5);
     this.pelvis.lookAt(this.Lhip.position);
+
+    this.head.position.x = figureData.hipsForward;
+    var staffPosition = staff.getNoteHeight(figureData.note);
+    if (staffPosition < 0)
+        this.head.position.z = figureData.headHeight + Math.max(this.Lhip.position.z, this.Rhip.position.z) + figureData.headBob/4;
+    else
+        this.head.position.z = lerp(0.1, this.head.position.z, staff.getNoteHeight(figureData.note) + figureData.headBob/6);
 
     var vec = new THREE.Vector3();
     var d = new THREE.Vector3();

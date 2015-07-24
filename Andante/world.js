@@ -7,15 +7,23 @@ function World(calibration) {
     this.root = node();
 
     this.calibrate(calibration);
+    this.browserView(calibration);
 
     this.time = 0;
 
-    this.material = phongMaterial(0xffffff, 0x000000, 0x000000, 30);
+    this.material = phongMaterial(0xdddddd, 0x000000, 0x000000, 30);
+    this.medMaterial = phongMaterial(0x777777, 0x000000, 0x000000, 30);
     this.darkMaterial = phongMaterial(0x202020, 0x000000, 0x000000, 20);
 
     this.isPaused = false;
+    this.pianoDisplay = false;
+}
+World.prototype.browserView = function() {
+    this.root.rotation.z = 0;
+    calibration.setVisible(false);
 }
 World.prototype.calibrate = function(calibration) {
+    calibration.setVisible(true);
     this.root.position.x = calibration.getOffsetX();
     this.root.position.y = calibration.getOffsetY();
     this.root.rotation.z = Math.atan2(calibration.getHeightDiff(), calibration.getWidth());
@@ -38,7 +46,7 @@ World.prototype.setup = function() {
     this.scene.add(this.root);
 }
 World.prototype.render = function() {
-    this.renderer.setClearColor( 0x000000, 1);
+    this.renderer.setClearColor( 0x000000, 0);
     this.renderer.render(this.scene, this.camera);
 }
 World.prototype.getRoot = function() {
@@ -49,17 +57,18 @@ World.prototype.getRoot = function() {
     For calibration
 */
 function Calibration() {
-    this.leftX = -10.59;
-    this.rightX = 7.23;
-    this.leftY = -2.7;
-    this.rightY = -3.39;
+    this.leftX = -10.51;
+    this.leftY = -2.45;
+    this.rightX = 7.48;
+    this.rightY = -2.98;
     this.whiteY = 0;
     this.blackY = -2;
 
     this.left = globe();
     this.right = globe();
-}
 
+    this.hidden = false;
+}
 Calibration.prototype.addToScene = function(scene) {
     this.left.position.set(this.leftX, this.leftY, 0);
     this.left.scale.set(.1, .1, .1);
@@ -69,7 +78,11 @@ Calibration.prototype.addToScene = function(scene) {
     this.right.scale.set(.1, .1, .1);
     scene.add(this.right);
 }
-
+Calibration.prototype.setVisible = function(visible) {
+    this.left.visible = visible;
+    this.right.visible = visible;
+    this.hidden = visible;
+}
 Calibration.prototype.getWidth = function() {
     return this.rightX - this.leftX;
 }
@@ -94,9 +107,16 @@ addEventListener("keydown", function(event) {
     switch (event.keyCode) {
         case 13:
             world.isPaused = !world.isPaused;
-            //midiOut.flushNotes();
+            midiOut.flushNotes();
             //console.log("seq length " + sequence.getLength());
             recalibrate = false;
+            break;
+        case 32:
+            world.pianoDisplay = !world.pianoDisplay;
+            if (world.pianoDisplay)
+                world.calibrate(calibration);
+            else
+                world.browserView(calibration);
             break;
         case 65: // L left ... A
             calibration.leftX -=0.01;
@@ -142,7 +162,7 @@ addEventListener("keydown", function(event) {
             recalibrate = false;
             break;
     }
-    if (recalibrate)
+    if (recalibrate && world.pianoDisplay)
         world.calibrate(calibration);
 
 });

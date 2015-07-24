@@ -181,11 +181,6 @@ NaturalMinor.prototype = Object.create(Scale.prototype);
 function Arpeggio(start) {Scale.call(this, start || 60, [3, 3]);}
 Arpeggio.prototype = Object.create(Scale.prototype);
 
-var cMajor = new Scale(60);
-cMajor.printNotes();
-
-var cAltered = new AlteredScale(60);
-cAltered.printNotes();
-
-var cMinor = new NaturalMinor(60);
-cMinor.printNotes();
+//var cMajor = new Scale(60);
+//var cAltered = new AlteredScale(60);
+//var cMinor = new NaturalMinor(60);

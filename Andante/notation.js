@@ -79,6 +79,6 @@ Staff.prototype.getNoteHeight = function(midi) {
             return this.trebleY + this.noteSize * 3.5;
             break;
         default:
-            return this.trebleY - this.noteSize * 3;
+            return -1;
     }
 }

@@ -1,6 +1,5 @@
-///////////////////////////////////////////////////////////////////////////////
 /*
-    Key
+    Data for each key
 */
 function Key(midi, x, y, isBlack) {
     this.midi = midi;
@@ -25,7 +24,7 @@ Key.prototype.setXY = function(x, y) {
 /*
     Virtual copy of locations of keyboard
 */
-function Keyboard(calibration) {
+function Keyboard() {
     this.whiteKeyHeight = 0;
     this.blackKeyHeight = 1;
     this.keyWidth = 0.4;
@@ -33,9 +32,10 @@ function Keyboard(calibration) {
     this.geometry = node();
     this.midiMax = 108;
     this.midiMin = 21;
+    this.numKeys = 88;
 
     this.keys = [];
-    for (var i = 1; i < 89; i++) {
+    for (var i = 1; i < 1 + this.numKeys; i++) {
         var x = i;
         var y = 0;
         var isBlackKey = this.isBlack(i);
@@ -43,8 +43,11 @@ function Keyboard(calibration) {
         this.keys.push(key);
     }
     console.log("x0: " + this.keys[0].x);
-    console.log("x1: " + this.keys[1].x);
+    console.log("x87: " + this.keys[87].x);
     console.log(this.keys.length);
+}
+Keyboard.prototype.getWidth = function() {
+    return this.keyWidth * this.numKeys;
 }
 Keyboard.prototype.isBlack= function(num) {
     var isBlack = [2, 5, 7, 10, 0]; //[1, 4, 6, 9, 11];
@@ -54,10 +57,10 @@ Keyboard.prototype.isBlack= function(num) {
     }
     return false;
 }
-Keyboard.prototype.calibrate = function(calibration) {
-    for (var i = 1; i < 89; i++) {
+Keyboard.prototype.calibrate = function() {
+    for (var i = 1; i < 1 + this.numKeys; i++) {
         var x = i;
-        var y = 0//
+        var y = 0
         this.keys[i-1].setXY(x, y);
     }
 }
@@ -70,7 +73,6 @@ Keyboard.prototype.getKeyFromX = function(x) {
     if (result)
         //console.log("getKeyFromX result: " + result.x);
     return result;
-
 }
 Keyboard.prototype.getNextKeyFromX = function(x) {
     var diffThresh = 0.02;
@@ -137,25 +139,25 @@ MidiOut.prototype.flushNotes = function() {
 }
 
 var midiOut;
-// navigator.requestMIDIAccess().then(
-//     function(midiAccess) {
-//         console.log("Success!");
-//         var input = midiAccess.inputs.values().next();
-//         if (input)
-//             input.value.onmidimessage = onMIDIMessage;
-//
-//         var output = midiAccess.outputs.values().next();
-//         if (output)
-//             midiOut = new MidiOut(output);
-//
-//         if (!input || !output) {
-//             console.log("something wrong with IO");
-//             return null;
-//         }
-//
-//     },
-//     function(err) { console.log("Failed to get MIDI access - " + err); }
-// );
+navigator.requestMIDIAccess().then(
+    function(midiAccess) {
+        console.log("Success!");
+        var input = midiAccess.inputs.values().next();
+        if (input)
+            input.value.onmidimessage = onMIDIMessage;
+
+        var output = midiAccess.outputs.values().next();
+        if (output)
+            midiOut = new MidiOut(output);
+
+        if (!input || !output) {
+            console.log("something wrong with IO");
+            return null;
+        }
+
+    },
+    function(err) { console.log("Failed to get MIDI access - " + err); }
+);
 
 function onMIDIMessage(event) {
     var data = event.data,
