@@ -24,13 +24,13 @@
 <body>
     <div id="info">Piano OBJLoader Test</div>
 
-    <script src="js/three.min.js"></script>
-    <script src="js/OrbitControls.js"></script>
+    <script src="../js/three.min.js"></script>
+    <script src="../js/OrbitControls.js"></script>
 
-    <script src="js/loaders/CompressedTextureLoader.js"></script>
-    <script src="js/loaders/DDSLoader.js"></script>
-    <script src="js/loaders/MTLLoader.js"></script>
-    <script src="js/loaders/OBJMTLLoader.js"></script>
+    <script src="../js/loaders/CompressedTextureLoader.js"></script>
+    <script src="../js/loaders/DDSLoader.js"></script>
+    <script src="../js/loaders/MTLLoader.js"></script>
+    <script src="../js/loaders/OBJMTLLoader.js"></script>
 
     <script>
         var container;
@@ -67,7 +67,7 @@
 
             THREE.Loader.Handlers.add(/\.dds$/i, new THREE.DDSLoader());
             var loader = new THREE.OBJMTLLoader();
-            loader.load( 'model/piano4.obj', 'model/piano.mtl', function ( object ) {
+            loader.load( 'piano4.obj', 'piano.mtl', function ( object ) {
                 object.position.x = 10;
                 object.position.y = -40;
                 scene.add(object);

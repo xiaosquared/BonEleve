@@ -1,181 +1,195 @@
-<!DOCTYPE html>
-<meta charset="utf-8">
+<html>
 <head>
-<style>
-/*
-    Perspective transform of a video
+    <style>
+        body {
+            position: relative;
+            background-color: black;
+            color: #ffffff;
+        }
+        svg {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+        .handle {
+          fill: none;
+          pointer-events: all;
+          stroke: #fff;
+          stroke-width: 1px;
+          cursor: move;
+        }
+        #c0 {
+            position: absolute;
+            top:200px;
+            left:52px;
+        }
+        #c1 {
+            position: absolute;
+            top:200px;
+            left:461px;
+        }
+        #c2 {
+            position: absolute;
+            top:200px;
+            left:870px;
+        }
 
-    Based on code from Bike Bostock:
-    http://bl.ocks.org/mbostock/10571478
-    http://bl.ocks.org/mbostock/10591444
-*/
+        #menu {
+            position: absolute;
+            top:50px; left: 600px;
+            color: #ffffff;
+            font-family: monospace;
+            font-size:11px;
+            text-align:center;
+            z-index:2;
+        }
 
-body {
-  position: relative;
-  background-color: #2a2a2a;
-}
+        a {
+            text-decoration: underline;
+            cursor: pointer;
+            color: #ffffff;
+        }
+    </style>
 
-#background {
-  width: 0px;
-  height: 0px;
-}
-
-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.line {
-  stroke: #fff;
-  stroke-opacity: .5;
-  stroke-width: 0.75px;
-  stroke-linecap: square;
-}
-
-.handle {
-  fill: none;
-  pointer-events: all;
-  stroke: #fff;
-  stroke-width: 1px;
-  cursor: move;
-}
-
-#c1 {
-    position: absolute;
-    top: 50px;
-    left: 100px;
-
-}
-
-</style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
-<script src="numeric-solve.min.js"></script>
-<script>
-        var video, copy, copycanvas;
-        var c1, c2, c3;
-
-        var videoWidth = 1280;
-        var videoHeight = 720;
+    <script src="js/d3.min.js"></script>
+    <script src="js/numeric-solve.min.js"></script>
+    <script>
+        var videoWidth = 1230;
+        var videoHeight = 170;
         var tileWidth = videoWidth/3;
-        var tileHeight = videoHeight/2;
-        var TILE_1 = {x: 0, y: 0, w: tileWidth, h: tileHeight};
-        var TILE_2 = {x: tileWidth, y: 0, w: tileWidth, h: tileHeight};
-        var TILE_3 = {x: tileWidth * 2, y: 0, w: tileWidth, h: tileHeight};
+        var tileHeight = videoHeight;
+
+        var margin = {top: 200, right: 50, bottom: 50, left: 50},
+        width = tileWidth;//1280 - margin.left - margin.right,
+        height = tileHeight;//720 - margin.top - margin.bottom;
+
+        var sourcePoints = [[0, 0], [0, height], [width, 0], [width, height], [2*width, 0], [2*width, height], [3*width, 0], [3*width, height]];
+        var targetPoints = [[0, 0], [0, height], [width, 0], [width, height], [2*width, 0], [2*width, height], [3*width, 0], [3*width, height]];
+
+        function getSquare(points, index) {
+            var result = [];
+            index *= 2;
+            result.push(points[index]);
+            result.push(points[index + 2]);
+            result.push(points[index + 3]);
+            result.push(points[index + 1]);
+            return result;
+        }
+
+        var video, copy, copycanvas;
+        var c0, c1, c2;
+        var HANDS_ORIGIN = {x: 40, y: 100}
 
         function init() {
             console.log("hello world");
             video = document.getElementById('video');
             copycanvas = document.getElementById('videocopy');
             copy = copycanvas.getContext('2d');
+            c0 = document.getElementById('c0').getContext('2d');
             c1 = document.getElementById('c1').getContext('2d');
+            c2 = document.getElementById('c2').getContext('2d');
+
             loop();
         }
+
         function loop() {
-            copy.drawImage(video, 0, 0);
-            c1.drawImage(copycanvas, TILE_1.x, TILE_1.y, TILE_1.w, TILE_1.h, 0, 0, tileWidth, tileHeight);
+            copy.drawImage(video, HANDS_ORIGIN.x, HANDS_ORIGIN.y, videoWidth, videoHeight, 0, 0, videoWidth, videoHeight);
+            c0.drawImage(copycanvas, 0, 0, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
+            c1.drawImage(copycanvas, tileWidth, 0, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
+            c2.drawImage(copycanvas, tileWidth * 2, 0, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
+
             requestAnimationFrame(loop);
         }
 
-</script>
+    </script>
+
 </head>
 
 <body onload="init();">
 
-<div id="background"></div>
+    <div id="menu">
+        <a onclick="video.play();">Play</a> |
+        <a onclick="video.pause();">Pause</a> <br>
+        <a onclick='toggleControls()'>Toggle Control Points</a>
+    </div>
+    <div style="display:none">
+        <video id="video" autoplay="false" loop="true">
+            <source src="hands.mov" type="video/mp4">
+        </video>
+        <canvas id="videocopy" width="1280" height="720"></canvas>
+    </div>
+    <div id = "transform">
+        <div id="c0tr"><canvas id="c0" width="438" height="370"></canvas></div>
+        <div id="c1tr"><canvas id="c1" width="438" height="370"></canvas></div>
+        <div id="c2tr"><canvas id="c2" width="438" height="370"></canvas></div>
+    </div>
 
-<div style="display:none">
-    <video id="video" autoplay="true" loop="true">
-        <source src="hands.mov" type="video/mp4">
-    </video>
-    <canvas id="videocopy" width="1280" height="720"></canvas>
-</div>
+    <script>
 
-<div id="transform">
-    <canvas id="c1" width="438" height="370"></canvas>
-</div>
+        var transform = ["", "-webkit-", "-moz-", "-ms-", "-o-"].reduce(function(p, v) { return v + "transform" in document.body.style ? v : p; }) + "transform";
 
-<script>
+        d3.select("body").selectAll("svg")
+                .data(["flat"])
+              .enter().append("svg")
+                .attr("id", function(d) { return d; })
+                .attr("width", 1500)
+                .attr("height", 1000)
+              .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-var margin = {top: 50, right: 100, bottom: 50, left: 100},
-    width = tileWidth;//1280 - margin.left - margin.right,
-    height = tileHeight;//720 - margin.top - margin.bottom;
+        var svgTransform = d3.select("#transform")
+            .style(transform + "-origin", margin.left + "px " + margin.top + "px 0");
 
-var transform = ["", "-webkit-", "-moz-", "-ms-", "-o-"].reduce(function(p, v) { return v + "transform" in document.body.style ? v : p; }) + "transform";
+        var svgFlat = d3.select("#flat");
+        function toggleControls() {
+            if (svgFlat.attr("visibility") == "hidden")
+                svgFlat.attr("visibility", "visible");
+            else
+                svgFlat.attr("visibility", "hidden");
+        }
 
-var sourcePoints = [[0, 0], [width, 0], [width, height], [0, height]],
-    targetPoints = [[0, 0], [width, 0], [width, height], [0, height]];
+        var c0Transform = d3.select("#c0tr").style(transform + "-origin", margin.left + "px " + margin.top + "px 0");
+        var c1Transform = d3.select("#c1tr").style(transform + "-origin", margin.left + "px " + margin.top + "px 0");
+        var c2Transform = d3.select("#c2tr").style(transform + "-origin", margin.left + "px " + margin.top + "px 0");
 
-d3.select("body").selectAll("svg")
-    .data(["transform", "flat"])
-  .enter().append("svg")
-    .attr("id", function(d) { return d; })
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", 1000 + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        var handle = svgFlat.select("g").selectAll(".handle")
+            .data(targetPoints)
+          .enter().append("circle")
+            .attr("class", "handle")
+            .attr("transform", function(d) { return "translate(" + d + ")"; })
+            .attr("r", 7)
+            .call(d3.behavior.drag()
+              .origin(function(d) { return {x: d[0], y: d[1]}; })
+              .on("drag", dragged));
 
-var svgTransform = d3.select("#transform")
-    .style(transform + "-origin", margin.left + "px " + margin.top + "px 0");
+        function dragged(d) {
+          d3.select(this).attr("transform", "translate(" + (d[0] = d3.event.x) + "," + (d[1] = d3.event.y) + ")");
+          transformed(getSquare(sourcePoints, 0), getSquare(targetPoints, 0), c0Transform);
+          transformed(getSquare(sourcePoints, 1), getSquare(targetPoints, 1), c1Transform);
+          transformed(getSquare(sourcePoints, 2), getSquare(targetPoints, 2), c2Transform);
+        }
 
-var svgFlat = d3.select("#flat");
+        function transformed(s_pts, t_pts, tile) {
+          for (var a = [], b = [], i = 0, n = s_pts.length; i < n; ++i) {
+            var s = s_pts[i], t = t_pts[i];
+            a.push([s[0], s[1], 1, 0, 0, 0, -s[0] * t[0], -s[1] * t[0]]), b.push(t[0]);
+            a.push([0, 0, 0, s[0], s[1], 1, -s[0] * t[1], -s[1] * t[1]]), b.push(t[1]);
+          }
 
-svgTransform.select("g").append("image")
-    .attr("xlink:href", "robots.jpg")
-    .attr("width", width)
-    .attr("height", height);
+          var X = solve(a, b, true), matrix = [
+            X[0], X[3], 0, X[6],
+            X[1], X[4], 0, X[7],
+               0,    0, 1,    0,
+            X[2], X[5], 0,    1
+          ].map(function(x) {
+            return d3.round(x, 6);
+          });
 
-svgTransform.select("g").selectAll(".line--x")
-    .data(d3.range(0, width + 1, 40))
-  .enter().append("line")
-    .attr("class", "line line--x")
-    .attr("x1", function(d) { return d; })
-    .attr("x2", function(d) { return d; })
-    .attr("y1", 0)
-    .attr("y2", height);
+          tile.style(transform, "matrix3d(" + matrix + ")");
+        }
 
-svgTransform.select("g").selectAll(".line--y")
-    .data(d3.range(0, height + 1, 40))
-  .enter().append("line")
-    .attr("class", "line line--y")
-    .attr("x1", 0)
-    .attr("x2", width)
-    .attr("y1", function(d) { return d; })
-    .attr("y2", function(d) { return d; });
+    </script>
 
-var handle = svgFlat.select("g").selectAll(".handle")
-    .data(targetPoints)
-  .enter().append("circle")
-    .attr("class", "handle")
-    .attr("transform", function(d) { return "translate(" + d + ")"; })
-    .attr("r", 7)
-    .call(d3.behavior.drag()
-      .origin(function(d) { return {x: d[0], y: d[1]}; })
-      .on("drag", dragged));
-
-function dragged(d) {
-  d3.select(this).attr("transform", "translate(" + (d[0] = d3.event.x) + "," + (d[1] = d3.event.y) + ")");
-  transformed();
-}
-
-function transformed() {
-  for (var a = [], b = [], i = 0, n = sourcePoints.length; i < n; ++i) {
-    var s = sourcePoints[i], t = targetPoints[i];
-    a.push([s[0], s[1], 1, 0, 0, 0, -s[0] * t[0], -s[1] * t[0]]), b.push(t[0]);
-    a.push([0, 0, 0, s[0], s[1], 1, -s[0] * t[1], -s[1] * t[1]]), b.push(t[1]);
-  }
-
-  var X = solve(a, b, true), matrix = [
-    X[0], X[3], 0, X[6],
-    X[1], X[4], 0, X[7],
-       0,    0, 1,    0,
-    X[2], X[5], 0,    1
-  ].map(function(x) {
-    return d3.round(x, 6);
-  });
-
-  svgTransform.style(transform, "matrix3d(" + matrix + ")");
-}
-
-</script>
 </body>
+
+</html>
