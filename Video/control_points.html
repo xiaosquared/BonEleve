@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<head>
 <style>
-
 /*
     Perspective transform of a video
 
@@ -12,9 +12,7 @@
 
 body {
   position: relative;
-  width: 960px;
-  height: 500px;
-  background-color: #eeeeee;
+  background-color: #2a2a2a;
 }
 
 #background {
@@ -29,9 +27,9 @@ svg {
 }
 
 .line {
-  stroke: #000;
+  stroke: #fff;
   stroke-opacity: .5;
-  stroke-width: 1px;
+  stroke-width: 0.75px;
   stroke-linecap: square;
 }
 
@@ -39,49 +37,69 @@ svg {
   fill: none;
   pointer-events: all;
   stroke: #fff;
-  stroke-width: 2px;
+  stroke-width: 1px;
   cursor: move;
 }
 
-#buttons {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 2;
-}
+#c1 {
+    position: absolute;
+    top: 50px;
+    left: 100px;
 
-#transform {
-}
-
-button {
-  display: block;
-  width: 10em;
-}
-
-button:focus {
-  outline: none;
 }
 
 </style>
-<div id="background"></div>
-<div id="buttons">
-  <button data-targets="[[492,329],[542,330],[569,434],[424,424]]">Floor</button>
-  <button data-targets="[[-28,287],[74,288],[72,413],[-31,404]]">Near Wall</button>
-  <button data-targets="[[-194,282],[-95,282],[-100,354],[-200,365]]">Far Wall</button>
-  <button data-targets="[[0,0],[400,0],[400,400],[0,400]]">Reset</button>
-</div>
-<div id="transform">
-    <video id="video" autoplay="true" loop="true">
-        <source src="hands.mov" type="video/mp4">
-    </video>
-</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 <script src="numeric-solve.min.js"></script>
 <script>
+        var video, copy, copycanvas;
+        var c1, c2, c3;
 
-var margin = {top: 50, right: 280, bottom: 50, left: 280},
-    width = 1280 - margin.left - margin.right,
-    height = 720 - margin.top - margin.bottom;
+        var videoWidth = 1280;
+        var videoHeight = 720;
+        var tileWidth = videoWidth/3;
+        var tileHeight = videoHeight/2;
+        var TILE_1 = {x: 0, y: 0, w: tileWidth, h: tileHeight};
+        var TILE_2 = {x: tileWidth, y: 0, w: tileWidth, h: tileHeight};
+        var TILE_3 = {x: tileWidth * 2, y: 0, w: tileWidth, h: tileHeight};
+
+        function init() {
+            console.log("hello world");
+            video = document.getElementById('video');
+            copycanvas = document.getElementById('videocopy');
+            copy = copycanvas.getContext('2d');
+            c1 = document.getElementById('c1').getContext('2d');
+            loop();
+        }
+        function loop() {
+            copy.drawImage(video, 0, 0);
+            c1.drawImage(copycanvas, TILE_1.x, TILE_1.y, TILE_1.w, TILE_1.h, 0, 0, tileWidth, tileHeight);
+            requestAnimationFrame(loop);
+        }
+
+</script>
+</head>
+
+<body onload="init();">
+
+<div id="background"></div>
+
+<div style="display:none">
+    <video id="video" autoplay="true" loop="true">
+        <source src="hands.mov" type="video/mp4">
+    </video>
+    <canvas id="videocopy" width="1280" height="720"></canvas>
+</div>
+
+<div id="transform">
+    <canvas id="c1" width="438" height="370"></canvas>
+</div>
+
+<script>
+
+var margin = {top: 50, right: 100, bottom: 50, left: 100},
+    width = tileWidth;//1280 - margin.left - margin.right,
+    height = tileHeight;//720 - margin.top - margin.bottom;
 
 var transform = ["", "-webkit-", "-moz-", "-ms-", "-o-"].reduce(function(p, v) { return v + "transform" in document.body.style ? v : p; }) + "transform";
 
@@ -93,7 +111,7 @@ d3.select("body").selectAll("svg")
   .enter().append("svg")
     .attr("id", function(d) { return d; })
     .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
+    .attr("height", 1000 + margin.top + margin.bottom)
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
@@ -135,23 +153,6 @@ var handle = svgFlat.select("g").selectAll(".handle")
       .origin(function(d) { return {x: d[0], y: d[1]}; })
       .on("drag", dragged));
 
-d3.selectAll("button")
-    .datum(function(d) { return JSON.parse(this.getAttribute("data-targets")); })
-    .on("click", clicked)
-    .call(transformed);
-
-function clicked(d) {
-  d3.transition()
-      .duration(750)
-      .tween("points", function() {
-        var i = d3.interpolate(targetPoints, d);
-        return function(t) {
-          handle.data(targetPoints = i(t)).attr("transform", function(d) { return "translate(" + d + ")"; });
-          transformed();
-        };
-      });
-}
-
 function dragged(d) {
   d3.select(this).attr("transform", "translate(" + (d[0] = d3.event.x) + "," + (d[1] = d3.event.y) + ")");
   transformed();
@@ -177,3 +178,4 @@ function transformed() {
 }
 
 </script>
+</body>
