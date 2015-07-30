@@ -100,9 +100,12 @@ function doThings(out) {
 navigator.requestMIDIAccess().then(
     function(midiAccess) {
         console.log("Success!");
+        console.log(midiAccess.outputs.values());
+
         var input = midiAccess.inputs.values().next();
         if (input)
             input.value.onmidimessage = onMIDIMessage;
+
         var output = midiAccess.outputs.values().next();
 
         if (!input || !output) {
@@ -112,5 +115,5 @@ navigator.requestMIDIAccess().then(
 
         doThings(new MidiOut(output));
     },
-    function(err) { console.log("Failed to get MIDI access - " + err); } 
+    function(err) { console.log("Failed to get MIDI access - " + err); }
 );
