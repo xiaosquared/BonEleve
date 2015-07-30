@@ -4,6 +4,7 @@
 	----------------------------------------------------------------------
 	http://webaudio.github.io/web-midi-api/
 	----------------------------------------------------------------------
+	Modified by @xiaosquared to work with Yamaha Disklavier output, 7/29/15
 */
 
 (function(root) { 'use strict';
