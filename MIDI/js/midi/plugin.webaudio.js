@@ -57,7 +57,6 @@
 		};
 
 		midi.noteOn = function(channelId, noteId, velocity, delay) {
-			console.log("noteon");
 			delay = delay || 0;
 
 			/// check whether the note exists

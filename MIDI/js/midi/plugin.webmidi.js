@@ -82,15 +82,16 @@
 		});
 		scheduledTimeouts.length = 0;
 
+		// clear pedal
+		output.send([0xB0, 64, 0]); 	// damper (right pedal)
+		output.send([0xB0, 67, 0]);		// una corda (left pedal)
+
 		// clear notes
 		for (var i = 0; i < 10; i ++) {
 			for (var note = 0; note < 89; note++) {
 				output.send([0x80, note + 21, 0]);
 			}
 		}
-		// clear pedal
-		output.send([0xB0, 64, 0]); 	// damper (right pedal)
-		output.send([0xB0, 67, 0]);		// una corda (left pedal)
 	}
 
 	midi.chordOn = function(channel, chord, velocity, delay) {
