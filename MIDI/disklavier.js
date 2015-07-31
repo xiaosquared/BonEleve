@@ -66,6 +66,9 @@ function onMIDIMessage(event) {
     vel = data[2];
     var time = event.timeStamp;
 
+    if (channel == 0)
+        console.log("cmd " + cmd + " channel " + channel + " type " + type + " note " + note + " velocity " + vel);
+
     switch(type) {
         case 144:
             console.log("Note on " + note + " velocity " + vel + " time " + time)
