@@ -1,0 +1,43 @@
+<html>
+<head>
+
+<script>
+
+    var video;
+    function init() {
+        video = document.getElementById('video');
+        video.addEventListener("timeupdate", function() {
+            if (video.currentTime >= 5) {
+                video.pause();
+                setSpeed(2);
+                setCurrentTime(30);
+                video.play();
+            }
+        }, false);
+    }
+
+    function setSpeed(speed) {
+        video.playbackRate = speed;
+    }
+
+    function setCurrentTime(time) {
+        video.currentTime = time;
+    }
+
+
+</script>
+
+</head>
+
+<body onload="init();">
+
+
+<div>
+    <video id="video" loop="true" controls="true">
+        <source src="satie_hands.mov" type="video/mp4">
+    </video>
+</div>
+
+</body>
+
+</html>
