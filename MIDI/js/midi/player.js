@@ -37,6 +37,10 @@ midi.setStartPoint = function(start) {
     midi.startPoint = start;
 }
 
+midi.getCurrentTime = function() {
+    return midi.currentTime;
+}
+
 midi.pause = function() {
 	//var tmp = midi.restart;
 	stopAudio();

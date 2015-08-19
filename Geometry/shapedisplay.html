@@ -1,0 +1,146 @@
+<html>
+<head>
+    <style>
+    body {
+        background-color: #333333;
+        margin: 0px;
+        overflow: hidden;
+    }
+</style>
+<script src="./js/three.min.js"></script>
+<script src= "./js/OrbitControls.js"></script>
+</head>
+
+<body>
+<script>
+
+    function ShapeDisplay(width, height, scene) {
+        this.pinSize = 1;
+        this.inBetween = .05;
+        this.width = width;
+        this.height = height;
+        this.container = new THREE.Mesh();
+        this.pins = new Array(width*height);
+
+        var material = new THREE.MeshLambertMaterial( { color: 0xdddddd, shading: THREE.SmoothShading } );
+
+        for (var i = 0; i < width * height; i++) {
+            var pin = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material);
+            pin.position.set(i%width * (this.pinSize + this.inBetween) + this.pinSize/2,
+                            0, Math.floor(i/width) * (this.pinSize + this.inBetween) + this.pinSize/2);
+            pin.scale.set(1, 4, 1);
+            this.container.add(pin);
+            this.pins[i] = pin;
+        }
+        if (scene)
+            this.addToScene(scene);
+    }
+    ShapeDisplay.prototype.addToScene = function(scene) {
+        scene.add(this.container);
+    }
+    ShapeDisplay.prototype.setPosition = function(x, y) {
+        this.container.position.x = x;
+        this.container.position.z = y;
+    }
+    ShapeDisplay.prototype.getPinHeight = function(x, y){
+        var index = y * this.width + x;
+        if (index < this.pins.length)
+            return this.pins[index].position.y;
+        return null;
+    }
+    ShapeDisplay.prototype.setPinHeight = function(x, y, height) {
+        var index = y * this.width + x;
+        if (index < this.pins.length) {
+            this.pins[index].position.y = height;
+        }
+    }
+    ShapeDisplay.prototype.getActualWidth = function() {
+        return (this.pinSize + this.inBetween) * (this.width - 1) + this.pinSize;
+    }
+    ShapeDisplay.prototype.getActualHeight = function() {
+        return (this.pinSize + this.inBetween) * (this.height - 1) + this.pinSize;
+    }
+
+    function Transform(scene) {
+        this.leftDisplay = new ShapeDisplay(16, 24, scene);
+        this.midDisplay = new ShapeDisplay(16, 24, scene);
+        this.rightDisplay = new ShapeDisplay(16, 24, scene);
+
+        this.displayWidth = this.leftDisplay.getActualWidth();
+        this.displayHeight = this.leftDisplay.getActualHeight();
+        this.spacerWidth = 14.25;
+        this.spacerHeight = this.displayHeight;
+
+        this.midDisplay.setPosition(this.displayWidth + this.spacerWidth, 0);
+        this.rightDisplay.setPosition((this.displayWidth + this.spacerWidth)*2, 0);
+
+
+        var spacerMaterial = new THREE.MeshLambertMaterial( { color: 0x444444, shading: THREE.SmoothShading } );
+
+        var spacerLeft = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), spacerMaterial);
+        spacerLeft.scale.set(14.25, 2, this.displayHeight);
+        spacerLeft.position.set(this.displayWidth + this.spacerWidth/2, -2, this.leftDisplay.getActualHeight()/2);
+        scene.add(spacerLeft);
+
+        var spacerRight = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), spacerMaterial);
+        spacerRight.scale.set(14.25, 2, this.displayHeight);
+        spacerRight.position.set(this.displayWidth*2 + this.spacerWidth*3/2, -2, this.leftDisplay.getActualHeight()/2);
+        scene.add(spacerRight);
+    }
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+    function width() {return window.innerWidth;}
+    function height() {return window.innerHeight;}
+
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize(width(), height());
+    document.body.appendChild(renderer.domElement);
+
+    var camera = new THREE.PerspectiveCamera(27,width()/height(),1,1000);
+    camera.position.z = 50;
+
+    var controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    var scene = new THREE.Scene();
+    scene.add(new THREE.AmbientLight(0x666666));
+
+    var light = new THREE.DirectionalLight( 0xdfebff, 1.75 );
+    light.position.set( 50, 200, 100 );
+    light.position.multiplyScalar( 1.3 );
+    scene.add(light);
+
+    var white = new THREE.MeshLambertMaterial( { color: 0xdddddd, shading: THREE.SmoothShading } );
+
+    var transform;
+    function init() {
+        transform = new Transform(scene);
+    }
+
+    function loop() {
+        update();
+
+        renderer.setClearColor(0x333333, 1);
+        renderer.render(scene, camera);
+        requestAnimationFrame(loop);
+    }
+
+    function update() {
+        var time = Date.now();
+        for (var x = 0; x < 16; x++) {
+            for (var y = 0; y < 24; y++) {
+                transform.leftDisplay.setPinHeight(x, y, Math.sin(time/1000 + x));
+                transform.midDisplay.setPinHeight(x, y, Math.sin(time/1000 + x + y));
+                transform.rightDisplay.setPinHeight(x, y, Math.sin(time/1000 + y));
+            }
+        }
+
+    }
+
+    init();
+    loop();
+
+
+
+</script>
+</body>
+</html>
